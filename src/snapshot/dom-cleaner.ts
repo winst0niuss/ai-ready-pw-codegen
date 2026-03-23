@@ -13,7 +13,7 @@ export function getDomCleanerScript(): () => string {
     ]);
 
     const REMOVE_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'LINK', 'META']);
-    const MAX_DEPTH = 15;
+    const MAX_DEPTH = 30;
     const MAX_TEXT_LENGTH = 200;
 
     // Clone the entire document from body
