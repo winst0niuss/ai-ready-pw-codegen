@@ -1,6 +1,6 @@
-# Instructions for Analyzing DOMTrace Recordings
+# Instructions for Analyzing AI-Ready PW Codegen Recordings
 
-You are analyzing a recording archive produced by **DOMTrace** — an offline Playwright recorder that uses Playwright's built-in codegen for action capture. Your goal is to generate production-quality Playwright test code from the captured user session.
+You are analyzing a recording archive produced by **AI-Ready PW Codegen** — an offline Playwright recorder that uses Playwright's built-in codegen for action capture. Your goal is to generate production-quality Playwright test code from the captured user session.
 
 > **Note:** A copy of the analysis instructions (`ANALYSIS_PROMPT.md`) is included in every archive with session-specific metadata.
 

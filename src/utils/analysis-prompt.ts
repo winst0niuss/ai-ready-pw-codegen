@@ -3,7 +3,7 @@ import path from 'path';
 import { SessionMetadata } from '../types';
 
 export function writeAnalysisPrompt(outputDir: string, metadata: SessionMetadata): void {
-  const prompt = `# DOMTrace Recording
+  const prompt = `# AI-Ready PW Codegen Recording
 
 ## Session Info
 - **URL:** ${metadata.startUrl}

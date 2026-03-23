@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-**DOMTrace** — offline Playwright recorder that captures user interactions with DOM snapshots, accessibility trees, and screenshots for later AI analysis (test generation, Page Object creation). Uses Playwright's built-in codegen as the UI/interaction layer. Acts as an "offline MCP Playwright" — record on a machine without AI access, then send the archive to Claude Code.
+**AI-Ready PW Codegen** — offline Playwright recorder that captures user interactions with DOM snapshots, accessibility trees, and screenshots for later AI analysis (test generation, Page Object creation). Uses Playwright's built-in codegen as the UI/interaction layer. Acts as an "offline MCP Playwright" — record on a machine without AI access, then send the archive to Claude Code.
 
 ## Commands
 
@@ -23,7 +23,7 @@ No tests or linter configured.
 
 ## Architecture
 
-Uses Playwright's built-in codegen (`context._enableRecorder()` internal API) for action capture and UI. DOMTrace hooks into codegen events to capture DOM snapshots, accessibility trees, and screenshots on each recorded action.
+Uses Playwright's built-in codegen (`context._enableRecorder()` internal API) for action capture and UI. AI-Ready PW Codegen hooks into codegen events to capture DOM snapshots, accessibility trees, and screenshots on each recorded action.
 
 ### Communication Protocol
 

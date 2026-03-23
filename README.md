@@ -1,10 +1,10 @@
-# DOMTrace Playwright
+# AI-Ready PW Codegen
 
 Offline Playwright recorder that captures user interactions with DOM snapshots, accessibility trees, and screenshots — then packages everything into an archive for AI-powered test generation.
 
 > Record on any machine. Generate tests with AI later.
 
-## Why DOMTrace?
+## Why AI-Ready PW Codegen?
 
 - **Offline-first** — no AI connection needed during recording
 - **Rich context** — each action captures accessibility tree, cleaned DOM, and screenshot
@@ -99,7 +99,7 @@ tar -xzf recordings/recording-*.tar.gz
 
 ## Architecture
 
-Uses Playwright's built-in codegen (`context._enableRecorder()` internal API) for action capture and UI. DOMTrace hooks into codegen events to capture DOM snapshots, accessibility trees, and screenshots on each recorded action.
+Uses Playwright's built-in codegen (`context._enableRecorder()` internal API) for action capture and UI. AI-Ready PW Codegen hooks into codegen events to capture DOM snapshots, accessibility trees, and screenshots on each recorded action.
 
 **Dual `_enableRecorder` call**: First call opens the GUI inspector, second call (with `recorderMode: 'api'`) attaches the eventSink for programmatic access.
 
@@ -127,8 +127,8 @@ npx tsc --noEmit       # Type check
 ## Contributing
 
 ```bash
-git clone https://github.com/winst0niuss/domtrace-playwright.git
-cd domtrace-playwright
+git clone https://github.com/winst0niuss/ai-ready-pw-codegen.git
+cd ai-ready-pw-codegen
 npm install
 ```
 

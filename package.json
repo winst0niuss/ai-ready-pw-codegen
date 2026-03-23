@@ -1,21 +1,21 @@
 {
-  "name": "domtrace-playwright",
+  "name": "ai-ready-pw-codegen",
   "version": "1.0.0",
-  "description": "Offline Playwright recorder with DOM snapshots for AI-powered test generation",
+  "description": "AI-Ready PW Codegen — offline Playwright recorder with snapshots for AI-powered test generation",
   "author": "winst0niuss",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/winst0niuss/domtrace-playwright.git"
+    "url": "https://github.com/winst0niuss/ai-ready-pw-codegen.git"
   },
-  "homepage": "https://github.com/winst0niuss/domtrace-playwright#readme",
+  "homepage": "https://github.com/winst0niuss/ai-ready-pw-codegen#readme",
   "bugs": {
-    "url": "https://github.com/winst0niuss/domtrace-playwright/issues"
+    "url": "https://github.com/winst0niuss/ai-ready-pw-codegen/issues"
   },
   "keywords": [
     "playwright",
     "recorder",
-    "dom",
+    "codegen",
     "testing",
     "e2e",
     "automation",
@@ -26,7 +26,7 @@
   ],
   "main": "dist/main.js",
   "bin": {
-    "domtrace-playwright": "dist/main.js"
+    "ai-ready-pw-codegen": "dist/main.js"
   },
   "files": [
     "dist",
