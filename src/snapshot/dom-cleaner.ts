@@ -22,10 +22,6 @@ export function getDomCleanerScript(): () => string {
 
     const clone = body.cloneNode(true) as HTMLElement;
 
-    // Remove recorder toolbar
-    const toolbarHost = clone.querySelector('#__recorder-toolbar-host__');
-    if (toolbarHost) toolbarHost.remove();
-
     cleanNode(clone, 0);
 
     function cleanNode(node: any, depth: number): void {

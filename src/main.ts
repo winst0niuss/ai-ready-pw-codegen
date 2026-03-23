@@ -9,7 +9,6 @@ import { RecorderOptions } from './types';
 async function main() {
   const args = process.argv.slice(2);
 
-  // Parse CLI arguments
   const url = args.find((a) => !a.startsWith('--'));
   const noScreenshots = args.includes('--no-screenshots');
   const outputBase = getArgValue(args, '--output-dir') || './recordings';
@@ -49,7 +48,7 @@ async function main() {
   });
   const page = await context.newPage();
 
-  const recorder = new Recorder(page, browser, url, options);
+  const recorder = new Recorder(context, page, url, options);
 
   // Shutdown handler
   let finalized = false;
@@ -57,7 +56,7 @@ async function main() {
     if (finalized) return;
     finalized = true;
 
-    // Гарантия завершения: если finalize зависнет, убиваем процесс через 10 секунд
+    // Гарантия завершения через 10 секунд
     setTimeout(() => {
       console.error('\nForce exit: finalization timed out');
       process.exit(1);
@@ -76,16 +75,10 @@ async function main() {
     process.exit(0);
   }
 
-  // Кнопка Stop в тулбаре
-  recorder.onStop(finalize);
-
-  // Закрытие при закрытии последней страницы (крестик не убивает Chrome for Testing)
   context.on('close', finalize);
   page.on('close', () => {
     if (context.pages().length === 0) finalize();
   });
-
-  // Browser close handlers
   browser.on('disconnected', finalize);
   process.on('SIGINT', finalize);
   process.on('SIGTERM', finalize);
