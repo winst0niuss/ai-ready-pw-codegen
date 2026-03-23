@@ -1,5 +1,11 @@
 # AI-Ready PW Codegen
 
+[![npm version](https://img.shields.io/npm/v/ai-ready-pw-codegen)](https://www.npmjs.com/package/ai-ready-pw-codegen)
+[![license](https://img.shields.io/npm/l/ai-ready-pw-codegen)](https://github.com/winst0niuss/ai-ready-pw-codegen/blob/main/LICENSE)
+[![node](https://img.shields.io/node/v/ai-ready-pw-codegen)](https://nodejs.org/)
+[![playwright](https://img.shields.io/badge/playwright-1.58.2-45ba4b)](https://playwright.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+
 Offline Playwright recorder that captures user interactions with DOM snapshots, accessibility trees, and screenshots — then packages everything into an archive for AI-powered test generation.
 
 > Record on any machine. Generate tests with AI later.
@@ -12,24 +18,33 @@ Offline Playwright recorder that captures user interactions with DOM snapshots, 
 - **Playwright codegen** — uses built-in Playwright recorder UI for reliable action capture
 - **Compact archives** — DOM snapshots separated from actions to save AI context window
 
-## Quick Start
+## Installation
 
 ### Prerequisites
 
 - Node.js >= 18
 - npm
 
-### Install & Run
+### Install from npm
 
 ```bash
-npm install
-npx ts-node src/main.ts https://example.com
+npm install -g ai-ready-pw-codegen
 ```
+
+This installs the `ai-ready-pw-codegen` command globally. On first run, Playwright will download Chromium automatically.
+
+### Run
+
+```bash
+ai-ready-pw-codegen https://example.com
+```
+
+A headed Chromium browser opens with the Playwright recorder UI. Interact with the page — each action is captured with accessibility tree, cleaned DOM, and screenshot. Close the browser when done — the recording is saved and archived automatically.
 
 ### CLI Options
 
 ```
-npx ts-node src/main.ts <URL> [options]
+ai-ready-pw-codegen <URL> [options]
 
 Options:
   --no-screenshots     Disable screenshots
@@ -41,7 +56,13 @@ Options:
 ### Example
 
 ```bash
-npx ts-node src/main.ts https://demo.playwright.dev/todomvc --output-dir ./my-recording
+ai-ready-pw-codegen https://demo.playwright.dev/todomvc --output-dir ./my-recording
+```
+
+### Run without installing (npx)
+
+```bash
+npx ai-ready-pw-codegen https://example.com
 ```
 
 ## How It Works
@@ -89,7 +110,7 @@ Included in every archive. Contains session metadata and instructions for AI to 
 
 ```bash
 # 1. Record
-npx ts-node src/main.ts https://your-app.com
+ai-ready-pw-codegen https://your-app.com
 
 # 2. Send archive to AI
 # Extract and point Claude Code / Cursor / Gemini CLI to the recording directory
