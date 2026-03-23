@@ -4,6 +4,7 @@ import path from 'path';
 import { Recorder } from './recorder';
 import { generateOutputDir } from './utils/fs-helpers';
 import { createArchive } from './utils/archiver';
+import { writeAnalysisPrompt } from './utils/analysis-prompt';
 import { RecorderOptions } from './types';
 
 async function main() {
@@ -64,6 +65,7 @@ async function main() {
 
     try {
       await recorder.finalize();
+      writeAnalysisPrompt(outputDir);
       const archivePath = createArchive(outputDir);
       console.log(`\nArchive: ${archivePath}`);
       console.log('Done! Send the archive to Claude Code for analysis.');
