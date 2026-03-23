@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Offline Playwright recorder that captures user interactions with DOM snapshots, accessibility trees, and screenshots for later AI analysis (test generation, Page Object creation). Acts as an "offline MCP Playwright" — record on a machine without AI access, then send the archive to Claude Code.
+**SnapScribe** — offline Playwright recorder that captures user interactions with DOM snapshots, accessibility trees, and screenshots for later AI analysis (test generation, Page Object creation). Acts as an "offline MCP Playwright" — record on a machine without AI access, then send the archive to Claude Code.
 
 ## Commands
 
@@ -35,9 +35,9 @@ Browser (listener.ts)
         → capture accessibility tree + cleaned DOM + screenshot
         → write JSON to disk
 
-Browser (listener.ts)
-  → document.dispatchEvent(CustomEvent('__recorder_action__'))
-    → overlay.ts renders action in UI panel
+Node.js (recorder.ts)
+  → overlayPage.evaluate() pushes action data
+    → overlay-window.ts renders action in separate log window
 ```
 
 ### Key Files
@@ -46,15 +46,16 @@ Browser (listener.ts)
 - **`src/recorder.ts`** — Core class: injects scripts via `addInitScript`, listens for `__RECORDER__:` console messages, captures snapshots, writes action JSONs. Uses Promise queue for sequential processing
 - **`src/types.ts`** — All shared interfaces (`RecordedAction`, `ElementInfo`, `BrowserActionPayload`, `WaitForCondition`)
 - **`src/injected/listener.ts`** — Browser IIFE: captures click/input(debounced 300ms)/change/keydown/submit events in capture phase, generates CSS selectors and XPath, intercepts pushState for SPA navigation
-- **`src/injected/overlay.ts`** — Shadow DOM UI panel (Catppuccin dark theme): live action log, drag/collapse, WaitFor mode (element picker with condition selector: visible/hidden/attached/detached). Waits for `DOMContentLoaded` before mounting
-- **`src/snapshot/dom-cleaner.ts`** — Runs in browser via `page.evaluate()`: walks up from `window.__RECORDER_LAST_TARGET__` to find semantic scope (form/section/dialog), clones and strips non-test attributes, max depth 8
+- **`src/injected/toolbar.ts`** — In-page toolbar (closed Shadow DOM, Catppuccin dark theme): Record/WaitFor mode switching, element picker with condition selector (visible/hidden/attached/detached). Re-injects via MutationObserver if SPA framework removes it
+- **`src/overlay-window.ts`** — HTML for separate action log window (opened in a separate browser context), displays live action feed with type badges
+- **`src/snapshot/dom-cleaner.ts`** — Runs in browser via `page.evaluate()`: clones full page DOM from body, strips non-test attributes, max depth 15
 - **`src/snapshot/accessibility.ts`** — `page.accessibility.snapshot()` with fallback to `ariaSnapshot()`
 
 ### Injected Script Patterns
 
-- Guard: `window.__RECORDER_INJECTED__` / `window.__RECORDER_OVERLAY_INJECTED__` prevents double-injection
+- Guard: `window.__RECORDER_INJECTED__` / `window.__RECORDER_TOOLBAR_INJECTED__` prevents double-injection
 - Target element stored in `window.__RECORDER_LAST_TARGET__` for `page.evaluate()` access
-- Overlay uses **closed Shadow DOM** for CSS isolation; `isOverlayElement()` guard in listener prevents recording panel interactions
+- Toolbar uses **closed Shadow DOM** for CSS isolation; `isOverlayElement()` guard in listener prevents recording toolbar interactions
 - All event listeners use **capture phase** (`addEventListener(..., true)`)
 
 ### Output Format
@@ -76,5 +77,5 @@ Action types: `navigate`, `click`, `fill`, `select`, `keypress`, `submit`, `wait
 
 1. Add to union types in `src/types.ts` (`RecordedAction.action.type` + `BrowserActionPayload.type`)
 2. Add event listener in `src/injected/listener.ts` (capture phase, with `isOverlayElement` guard)
-3. Add badge style in `src/injected/overlay-styles.ts` (`.badge-{type}`)
+3. Add badge style in `src/injected/toolbar-styles.ts` (`.badge-{type}`) and `src/overlay-window.ts`
 4. Handle in `src/recorder.ts` `processAction` if special fields needed

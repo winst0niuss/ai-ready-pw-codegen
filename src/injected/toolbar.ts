@@ -1,6 +1,6 @@
 import { getToolbarStyles } from './toolbar-styles';
 
-// Тулбар на целевой странице — маленькая полоска для выбора режима (Record/WaitFor)
+// In-page toolbar — a small bar for switching modes (Record/WaitFor)
 export function getToolbarScript(): string {
   const styles = getToolbarStyles();
 
@@ -11,7 +11,7 @@ export function getToolbarScript(): string {
 
   var PREFIX = '__RECORDER__:';
 
-  // Состояние WaitFor — живёт между переинжекциями тулбара
+  // WaitFor state — persists across toolbar re-injections
   var waitForMode = false;
   var highlightedEl = null;
   var currentShadow = null;
@@ -34,7 +34,7 @@ export function getToolbarScript(): string {
     window.__RECORDER_WAITFOR_MODE__ = true;
     document.documentElement.style.cursor = 'crosshair';
 
-    // Обновляем кнопки если тулбар есть
+    // Update buttons if toolbar exists
     var btnW = currentShadow && currentShadow.querySelector('.btn-waitfor');
     var btnR = currentShadow && currentShadow.querySelector('.btn-record');
     if (btnW) btnW.classList.add('active');
@@ -110,7 +110,7 @@ export function getToolbarScript(): string {
     console.debug(PREFIX + JSON.stringify(payload));
   }
 
-  // --- Document-level listeners (регистрируются один раз) ---
+  // --- Document-level listeners (registered once) ---
 
   document.addEventListener('mousemove', function(e) {
     if (!waitForMode || pickerEl) return;
@@ -142,7 +142,7 @@ export function getToolbarScript(): string {
     }
   }, true);
 
-  // --- Создание DOM тулбара (может вызываться повторно) ---
+  // --- Toolbar DOM creation (may be called repeatedly) ---
 
   function createToolbar() {
     var host = document.createElement('div');
@@ -197,13 +197,13 @@ export function getToolbarScript(): string {
       if (waitForMode) exitWaitForMode();
     });
 
-    // Блокируем всплытие событий от тулбара
+    // Block event propagation from toolbar
     ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup'].forEach(function(evt) {
       toolbar.addEventListener(evt, function(e) { e.stopPropagation(); });
     });
   }
 
-  // --- Инжекция и MutationObserver ---
+  // --- Injection and MutationObserver ---
 
   function ensureToolbar() {
     if (!document.body) return;
@@ -215,7 +215,7 @@ export function getToolbarScript(): string {
   if (document.body) ensureToolbar();
   document.addEventListener('DOMContentLoaded', ensureToolbar);
 
-  // Переинжектируем если SPA-фреймворк удалил тулбар
+  // Re-inject if SPA framework removed the toolbar
   new MutationObserver(function() {
     if (document.body && !document.getElementById('__recorder-toolbar-host__')) {
       createToolbar();

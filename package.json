@@ -1,7 +1,7 @@
 {
-  "name": "full-codegen-recorder",
+  "name": "snapscribe",
   "version": "1.0.0",
-  "description": "Офлайн Playwright recorder с DOM-снэпшотами для AI-анализа",
+  "description": "Offline Playwright recorder with DOM snapshots for AI-powered test generation",
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc",

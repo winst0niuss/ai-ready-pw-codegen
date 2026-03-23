@@ -1,4 +1,4 @@
-// Этот файл экспортирует строку JS-кода для инжекции через addInitScript
+// Exports a JS code string for injection via addInitScript
 export function getListenerScript(): string {
   return `
 (function() {
@@ -10,7 +10,7 @@ export function getListenerScript(): string {
   let inputTimer = null;
   let lastInputTarget = null;
 
-  // Guard: не записываем события от тулбара рекордера
+  // Guard: skip events from the recorder toolbar
   function isOverlayElement(el) {
     var node = el;
     while (node) {
@@ -20,7 +20,7 @@ export function getListenerScript(): string {
     return false;
   }
 
-  // Атрибуты, которые собираем
+  // Attributes we collect
   const RELEVANT_ATTRS = [
     'id', 'class', 'data-testid', 'data-test', 'data-cy', 'data-qa',
     'aria-label', 'aria-labelledby', 'aria-describedby', 'aria-expanded',
@@ -50,48 +50,48 @@ export function getListenerScript(): string {
     } catch { return null; }
   }
 
-  // Генерация CSS-селектора (приоритет как в Playwright codegen)
+  // CSS selector generation (priority matching Playwright codegen)
   function getCssSelector(el) {
     // 1. data-testid / data-test / data-cy
     var testId = el.getAttribute('data-testid') || el.getAttribute('data-test') || el.getAttribute('data-cy');
     if (testId) return '[data-testid="' + testId + '"]';
 
-    // 2. id (если не автогенерированный)
+    // 2. id (skip auto-generated ones)
     if (el.id && !/^\d|^[:-]|--/.test(el.id)) return '#' + CSS.escape(el.id);
 
     var tag = el.tagName.toLowerCase();
 
-    // 3. role + name (aria-label или текст)
+    // 3. role + name (aria-label or text)
     var role = el.getAttribute('role') || getImplicitRole(el);
     var ariaLabel = el.getAttribute('aria-label');
     if (role && ariaLabel) return tag + '[role="' + role + '"][aria-label="' + ariaLabel.replace(/"/g, '\\"') + '"]';
 
-    // 4. aria-label без role
+    // 4. aria-label without role
     if (ariaLabel) return tag + '[aria-label="' + ariaLabel.replace(/"/g, '\\"') + '"]';
 
-    // 5. placeholder (для input/textarea)
+    // 5. placeholder (for input/textarea)
     var placeholder = el.getAttribute('placeholder');
     if (placeholder && (tag === 'input' || tag === 'textarea')) return tag + '[placeholder="' + placeholder.replace(/"/g, '\\"') + '"]';
 
-    // 6. alt (для img)
+    // 6. alt (for img)
     var alt = el.getAttribute('alt');
     if (alt && tag === 'img') return 'img[alt="' + alt.replace(/"/g, '\\"') + '"]';
 
-    // 7. Уникальный текст для кликабельных элементов (a, button)
+    // 7. Unique text for clickable elements (a, button)
     if (tag === 'a' || tag === 'button') {
       var text = (el.textContent || '').trim();
       if (text && text.length < 50) {
         var escapedText = text.replace(/"/g, '\\"');
-        // Проверяем уникальность через :has-text нельзя в CSS, используем role+name паттерн
+        // Can't use :has-text in CSS, use role+name pattern
         if (role) return tag + '[role="' + role + '"]:text("' + escapedText + '")';
       }
     }
 
-    // 8. name атрибут (для form-элементов)
+    // 8. name attribute (for form elements)
     var name = el.getAttribute('name');
     if (name && (tag === 'input' || tag === 'select' || tag === 'textarea')) return tag + '[name="' + name + '"]';
 
-    // 9. Fallback: рекурсивный CSS path
+    // 9. Fallback: recursive CSS path
     var parent = el.parentElement;
     if (!parent) return tag;
 
@@ -124,7 +124,7 @@ export function getListenerScript(): string {
     return '';
   }
 
-  // Генерация простого XPath
+  // Simple XPath generation
   function getXPath(el) {
     if (el.id) return '//*[@id="' + el.id + '"]';
 
@@ -160,13 +160,13 @@ export function getListenerScript(): string {
     }, extra || {});
   }
 
-  // Делаем buildPayload доступным для toolbar (waitFor)
+  // Expose buildPayload for toolbar (waitFor)
   window.__RECORDER_BUILD_PAYLOAD__ = buildPayload;
 
   function send(payload) {
-    window.__RECORDER_LAST_TARGET__ = null; // сбрасываем перед установкой нового
+    window.__RECORDER_LAST_TARGET__ = null; // reset before setting new target
     try {
-      // Сохраняем ссылку на элемент для DOM snapshot
+      // Keep element reference for DOM snapshot
       const el = payload._element;
       delete payload._element;
       if (el) window.__RECORDER_LAST_TARGET__ = el;
@@ -174,7 +174,7 @@ export function getListenerScript(): string {
     console.debug(PREFIX + JSON.stringify(payload));
   }
 
-  // Click — с fallback на mousedown для IDE (Theia/Monaco), где click может не генерироваться
+  // Click — with mousedown fallback for IDE (Theia/Monaco) where click may not fire
   let pendingMousedown = null;
   let mousedownTimer = null;
 
@@ -184,11 +184,11 @@ export function getListenerScript(): string {
     if (!el || !el.tagName) return;
     if (isOverlayElement(el)) return;
     if (el.tagName === 'SELECT') return;
-    // Запоминаем mousedown, ждём click 400мс
+    // Store mousedown, wait 400ms for click
     clearTimeout(mousedownTimer);
     pendingMousedown = el;
     mousedownTimer = setTimeout(function() {
-      // Click не пришёл — записываем mousedown как click (IDE-режим)
+      // Click didn't fire — record mousedown as click (IDE mode)
       if (pendingMousedown) {
         const payload = buildPayload('click', pendingMousedown);
         payload._element = pendingMousedown;
@@ -204,7 +204,7 @@ export function getListenerScript(): string {
     if (!el || !el.tagName) return;
     if (isOverlayElement(el)) return;
     if (el.tagName === 'SELECT') return;
-    // Click пришёл — отменяем mousedown fallback
+    // Click fired — cancel mousedown fallback
     clearTimeout(mousedownTimer);
     pendingMousedown = null;
     const payload = buildPayload('click', el);
@@ -212,7 +212,7 @@ export function getListenerScript(): string {
     send(payload);
   }, true);
 
-  // Input (с дебаунсом)
+  // Input (debounced)
   document.addEventListener('input', function(e) {
     const el = e.target;
     if (!el || !el.tagName) return;
@@ -227,7 +227,7 @@ export function getListenerScript(): string {
     }, 300);
   }, true);
 
-  // Change (для select)
+  // Change (for select elements)
   document.addEventListener('change', function(e) {
     const el = e.target;
     if (!el || el.tagName !== 'SELECT') return;
@@ -243,7 +243,7 @@ export function getListenerScript(): string {
     const el = e.target;
     if (!el || !el.tagName) return;
     if (isOverlayElement(el)) return;
-    // Если есть pending input — отправляем его сначала
+    // Flush pending input first if present
     if (lastInputTarget && e.key === 'Enter') {
       clearTimeout(inputTimer);
       const fillPayload = buildPayload('fill', lastInputTarget, { value: lastInputTarget.value || '' });
@@ -266,7 +266,7 @@ export function getListenerScript(): string {
     send(payload);
   }, true);
 
-  // Перехват pushState/replaceState для SPA
+  // Intercept pushState/replaceState for SPA navigation
   const origPush = history.pushState;
   const origReplace = history.replaceState;
   history.pushState = function() {

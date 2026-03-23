@@ -1,6 +1,6 @@
-// Функция для выполнения через page.evaluate()
-// Очищает полный DOM страницы, оставляя только test-relevant данные
-// Возвращает функцию-строку — типизация DOM здесь не нужна, код выполняется в браузере
+// Function executed via page.evaluate()
+// Cleans full page DOM, keeping only test-relevant data
+// Returns a function string — DOM typing not needed here, code runs in browser
 export function getDomCleanerScript(): () => string {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fn = function (this: any) {
@@ -16,13 +16,13 @@ export function getDomCleanerScript(): () => string {
     const MAX_DEPTH = 15;
     const MAX_TEXT_LENGTH = 200;
 
-    // Клонируем весь документ от body
+    // Clone the entire document from body
     const body = document.body;
     if (!body) return '<no-body/>';
 
     const clone = body.cloneNode(true) as HTMLElement;
 
-    // Удаляем тулбар рекордера
+    // Remove recorder toolbar
     const toolbarHost = clone.querySelector('#__recorder-toolbar-host__');
     if (toolbarHost) toolbarHost.remove();
 
@@ -55,7 +55,7 @@ export function getDomCleanerScript(): () => string {
         return;
       }
 
-      // Убираем лишние атрибуты
+      // Strip irrelevant attributes
       const attrsToRemove: string[] = [];
       for (const attr of Array.from(el.attributes) as any[]) {
         if (!ALLOWED_ATTRS.has(attr.name) && !attr.name.startsWith('aria-')) {

@@ -1,4 +1,4 @@
-// HTML-контент для отдельного окна с логом действий
+// HTML content for the separate action log window
 export function getOverlayWindowHTML(): string {
   return `<!DOCTYPE html>
 <html>
@@ -152,7 +152,7 @@ export function getOverlayWindowHTML(): string {
     var btnClear = document.getElementById('btn-clear');
     var count = 0;
 
-    // Вызывается из recorder.ts через page.evaluate
+    // Called from recorder.ts via page.evaluate
     window.__addAction = function(data) {
       if (emptyMsg) { emptyMsg.remove(); emptyMsg = null; }
       count++;

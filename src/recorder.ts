@@ -17,7 +17,7 @@ export class Recorder {
   private actionIndex = 0;
   private startedAt: string;
   private startUrl: string;
-  // Promise-очередь для последовательной обработки действий
+  // Promise queue for sequential action processing
   private actionQueue: Promise<void> = Promise.resolve();
   private lastNavigateUrl = '';
   private lastActionType = '';
@@ -32,31 +32,30 @@ export class Recorder {
   }
 
   async start(): Promise<void> {
-    // Открываем окно лога действий в отдельном контексте (= отдельное окно браузера)
+    // Open action log window in a separate context (= separate browser window)
     const overlayContext = await this.browser.newContext({
       viewport: { width: 500, height: 700 },
     });
     this.overlayPage = await overlayContext.newPage();
     await this.overlayPage.setContent(getOverlayWindowHTML());
-    // Не даём закрытию overlay-окна ломать запись
+    // Prevent overlay window close from breaking the recording
     this.overlayPage.on('close', () => { this.overlayPage = null; });
 
-    // Инжектируем скрипты на уровне контекста — работает для всех вкладок
+    // Inject scripts at context level — works across all tabs
     const context = this.page.context();
     await context.addInitScript(getListenerScript());
     await context.addInitScript(getToolbarScript());
 
-    // Подключаем слушатели к странице
+    // Attach listeners to the page
     this.attachPageListeners(this.page);
 
-    // Переключаем фокус при открытии новой вкладки
+    // Switch focus when a new tab opens
     context.on('page', (newPage) => {
-      // Игнорируем overlay-окно (оно в другом контексте)
-      console.log('[recorder] Новая вкладка, переключаем фокус');
+      console.log('[recorder] New tab detected, switching focus');
       this.switchToPage(newPage);
     });
 
-    // Первая навигация
+    // Initial navigation
     await this.page.goto(this.startUrl, { waitUntil: 'domcontentloaded' });
   }
 
@@ -79,7 +78,7 @@ export class Recorder {
         }
         this.enqueueAction(payload.type, payload);
       } catch {
-        // Игнорируем невалидные сообщения
+        // Ignore invalid messages
       }
     });
 
@@ -103,7 +102,7 @@ export class Recorder {
   private switchToPage(newPage: Page): void {
     this.page = newPage;
     this.attachPageListeners(newPage);
-    // Записываем navigate на новую вкладку
+    // Record navigate action for new tab
     newPage.once('load', () => {
       const url = newPage.url();
       if (url !== this.lastNavigateUrl) {
@@ -137,10 +136,10 @@ export class Recorder {
 
     console.log(`[${paddedIndex}] ${type}${payload?.cssSelector ? ' → ' + payload.cssSelector : ''} (${url})`);
 
-    // Ждём немного чтобы DOM обновился после действия
+    // Brief wait for DOM to settle after the action
     await this.page.waitForTimeout(100);
 
-    // Захватываем снэпшоты
+    // Capture snapshots
     let accessibilityTree: unknown = null;
     let cleanedDom = '';
 
@@ -156,7 +155,7 @@ export class Recorder {
       cleanedDom = '<error>failed to capture DOM</error>';
     }
 
-    // Скриншот
+    // Screenshot
     let screenshotFile: string | null = null;
     if (this.options.screenshots) {
       try {
@@ -165,11 +164,11 @@ export class Recorder {
         writeScreenshot(screenshotPath, buffer);
         screenshotFile = `screenshots/${paddedIndex}-${type}.png`;
       } catch {
-        // Скриншот не критичен
+        // Screenshot is non-critical
       }
     }
 
-    // Формируем action
+    // Build action record
     const action: RecordedAction = {
       index,
       timestamp,
@@ -199,11 +198,11 @@ export class Recorder {
       screenshotFile,
     };
 
-    // Сохраняем на диск
+    // Save to disk
     const actionPath = path.join(this.outputDir, 'actions', `${paddedIndex}-${type}.json`);
     writeJSON(actionPath, action);
 
-    // Отправляем в окно лога
+    // Push to overlay log window
     this.pushToOverlay(action);
   }
 
@@ -221,12 +220,12 @@ export class Recorder {
     this.overlayPage.evaluate((d: typeof data) => {
       (window as any).__addAction(d);
     }, data).catch(() => {
-      // Окно лога могло быть закрыто
+      // Log window may have been closed
     });
   }
 
   async finalize(): Promise<void> {
-    // Ждём завершения всех действий в очереди
+    // Wait for all queued actions to complete
     await this.actionQueue;
 
     const metadata: SessionMetadata = {
@@ -239,6 +238,6 @@ export class Recorder {
     };
 
     writeJSON(path.join(this.outputDir, 'metadata.json'), metadata);
-    console.log(`\nЗаписано ${this.actionIndex} действий`);
+    console.log(`\nRecorded ${this.actionIndex} actions`);
   }
 }

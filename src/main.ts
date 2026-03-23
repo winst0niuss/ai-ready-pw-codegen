@@ -8,7 +8,7 @@ import { RecorderOptions } from './types';
 async function main() {
   const args = process.argv.slice(2);
 
-  // Парсим аргументы
+  // Parse CLI arguments
   const url = args.find((a) => !a.startsWith('--'));
   const noScreenshots = args.includes('--no-screenshots');
   const outputBase = getArgValue(args, '--output-dir') || './recordings';
@@ -16,15 +16,15 @@ async function main() {
   const viewportHeight = parseInt(getArgValue(args, '--height') || '720', 10);
 
   if (!url) {
-    console.log('Использование: npx ts-node src/main.ts <URL> [опции]');
+    console.log('Usage: npx ts-node src/main.ts <URL> [options]');
     console.log('');
-    console.log('Опции:');
-    console.log('  --no-screenshots     Не делать скриншоты');
-    console.log('  --output-dir <path>  Папка для записей (по умолчанию: ./recordings)');
-    console.log('  --width <number>     Ширина viewport (по умолчанию: 1280)');
-    console.log('  --height <number>    Высота viewport (по умолчанию: 720)');
+    console.log('Options:');
+    console.log('  --no-screenshots     Disable screenshots');
+    console.log('  --output-dir <path>  Output directory (default: ./recordings)');
+    console.log('  --width <number>     Viewport width (default: 1280)');
+    console.log('  --height <number>    Viewport height (default: 720)');
     console.log('');
-    console.log('Пример: npx ts-node src/main.ts https://example.com');
+    console.log('Example: npx ts-node src/main.ts https://example.com');
     process.exit(1);
   }
 
@@ -35,11 +35,11 @@ async function main() {
     viewport: { width: viewportWidth, height: viewportHeight },
   };
 
-  console.log(`Запуск записи: ${url}`);
-  console.log(`Папка: ${outputDir}`);
-  console.log(`Скриншоты: ${options.screenshots ? 'да' : 'нет'}`);
+  console.log(`Recording: ${url}`);
+  console.log(`Output: ${outputDir}`);
+  console.log(`Screenshots: ${options.screenshots ? 'on' : 'off'}`);
   console.log('');
-  console.log('Взаимодействуйте со страницей. Закройте браузер для завершения записи.');
+  console.log('Interact with the page. Close the browser to stop recording.');
   console.log('---');
 
   const browser = await chromium.launch({ headless: false });
@@ -50,7 +50,7 @@ async function main() {
 
   const recorder = new Recorder(page, browser, url, options);
 
-  // Обработка завершения
+  // Shutdown handler
   let finalized = false;
   async function finalize() {
     if (finalized) return;
@@ -59,17 +59,17 @@ async function main() {
     try {
       await recorder.finalize();
       const archivePath = createArchive(outputDir);
-      console.log(`\nАрхив: ${archivePath}`);
-      console.log('Готово! Отправьте архив в Claude Code для анализа.');
+      console.log(`\nArchive: ${archivePath}`);
+      console.log('Done! Send the archive to Claude Code for analysis.');
     } catch (err) {
-      console.error('Ошибка при финализации:', err);
+      console.error('Finalization error:', err);
     }
 
     try { await browser.close(); } catch {}
     process.exit(0);
   }
 
-  // Закрытие браузера
+  // Browser close handlers
   browser.on('disconnected', finalize);
   process.on('SIGINT', finalize);
   process.on('SIGTERM', finalize);
@@ -83,6 +83,6 @@ function getArgValue(args: string[], flag: string): string | undefined {
 }
 
 main().catch((err) => {
-  console.error('Ошибка:', err);
+  console.error('Error:', err);
   process.exit(1);
 });

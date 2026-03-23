@@ -15,10 +15,10 @@ export interface RecordedAction {
   url: string;
   action: {
     type: 'navigate' | 'click' | 'fill' | 'select' | 'keypress' | 'submit' | 'waitFor';
-    value?: string; // для fill/select — введённое значение
-    key?: string; // для keypress — нажатая клавиша
-    condition?: WaitForCondition; // для waitFor — условие ожидания
-    elementInfo?: ElementInfo; // нет для navigate
+    value?: string; // fill/select — the entered value
+    key?: string; // keypress — the pressed key
+    condition?: WaitForCondition; // waitFor — the wait condition
+    elementInfo?: ElementInfo; // absent for navigate
   };
   snapshot: {
     accessibilityTree: unknown;
@@ -44,7 +44,7 @@ export interface RecorderOptions {
 
 export type WaitForCondition = 'visible' | 'hidden' | 'attached' | 'detached';
 
-// Payload от инжектированного скрипта
+// Payload from injected browser script
 export interface BrowserActionPayload {
   type: 'click' | 'fill' | 'select' | 'keypress' | 'submit' | 'waitFor';
   value?: string;
