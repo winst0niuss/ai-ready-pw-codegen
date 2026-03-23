@@ -48,6 +48,17 @@ Playwright Codegen (built-in recorder)
 - **`src/types.ts`** — All shared interfaces (`RecordedAction`, `DomSnapshot`, `CodegenActionData`, `SessionMetadata`)
 - **`src/snapshot/dom-cleaner.ts`** — Runs in browser via `page.evaluate()`: clones full page DOM from body, strips non-test attributes, max depth 15
 - **`src/snapshot/accessibility.ts`** — `page.accessibility.snapshot()` with fallback to `ariaSnapshot()`
+- **`src/utils/archiver.ts`** — Creates `.tar.gz` archive via shell `tar -czf`
+- **`src/utils/analysis-prompt.ts`** — Generates `ANALYSIS_PROMPT.md` with session metadata + AI instructions
+- **`src/utils/fs-helpers.ts`** — `ensureDir`, `writeScreenshot`, `generateOutputDir`
+
+### Key Patterns
+
+- **Sequential Promise queue**: Actions are processed one-at-a-time via `actionQueue` chain in `recorder.ts`. Never parallel — order matters.
+- **DOM cleaner runs in-browser**: `dom-cleaner.ts` exports a function passed to `page.evaluate()`. Whitelists test/semantic attributes, strips scripts/styles, max depth 15, max text 200 chars.
+- **Finalization safety**: 5s timeout on action queue drain + 10s absolute timeout in `main.ts` to prevent zombie processes. Shutdown triggers: context close, page close, browser disconnect, SIGINT, SIGTERM.
+- **`@ts-expect-error` for internal APIs**: Used to suppress TS errors on `_enableRecorder` and other underscore-prefixed Playwright internals.
+- **Non-blocking captures**: Screenshot/snapshot failures are logged but don't block action recording.
 
 ### Output Format
 
