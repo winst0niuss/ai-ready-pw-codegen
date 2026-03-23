@@ -1,7 +1,11 @@
 {
-  "name": "domtrace",
+  "name": "domtrace-playwright",
   "version": "1.0.0",
   "description": "Offline Playwright recorder with DOM snapshots for AI-powered test generation",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/winst0niuss/domtrace-playwright.git"
+  },
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc",

@@ -1,4 +1,6 @@
-# DOMTrace
+# DOMTrace Playwright
+
+[![GitHub](https://img.shields.io/github/license/winst0niuss/domtrace-playwright)](https://github.com/winst0niuss/domtrace-playwright)
 
 Offline Playwright recorder that captures user interactions with DOM snapshots, accessibility trees, and screenshots — then packages everything into an archive for AI-powered test generation.
 
@@ -151,6 +153,14 @@ Two-layer system:
 ```bash
 npm run build          # Build to dist/
 npx tsc --noEmit       # Type check
+```
+
+## Contributing
+
+```bash
+git clone https://github.com/winst0niuss/domtrace-playwright.git
+cd domtrace-playwright
+npm install
 ```
 
 ## License
