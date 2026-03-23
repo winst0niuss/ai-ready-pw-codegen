@@ -2,13 +2,41 @@
   "name": "domtrace-playwright",
   "version": "1.0.0",
   "description": "Offline Playwright recorder with DOM snapshots for AI-powered test generation",
+  "author": "winst0niuss",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/winst0niuss/domtrace-playwright.git"
   },
+  "homepage": "https://github.com/winst0niuss/domtrace-playwright#readme",
+  "bugs": {
+    "url": "https://github.com/winst0niuss/domtrace-playwright/issues"
+  },
+  "keywords": [
+    "playwright",
+    "recorder",
+    "dom",
+    "testing",
+    "e2e",
+    "automation",
+    "ai",
+    "test-generation",
+    "accessibility",
+    "snapshot"
+  ],
   "main": "dist/main.js",
+  "bin": {
+    "domtrace-playwright": "dist/main.js"
+  },
+  "files": [
+    "dist",
+    "ANALYZING_RECORDINGS.md",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "start": "ts-node src/main.ts",
     "record": "ts-node src/main.ts"
   },

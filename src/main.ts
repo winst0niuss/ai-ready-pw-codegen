@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { chromium } from 'playwright';
 import path from 'path';
 import { Recorder } from './recorder';
@@ -16,7 +17,7 @@ async function main() {
   const viewportHeight = parseInt(getArgValue(args, '--height') || '720', 10);
 
   if (!url) {
-    console.log('Usage: npx ts-node src/main.ts <URL> [options]');
+    console.log('Usage: domtrace-playwright <URL> [options]');
     console.log('');
     console.log('Options:');
     console.log('  --no-screenshots     Disable screenshots');
@@ -24,7 +25,7 @@ async function main() {
     console.log('  --width <number>     Viewport width (default: 1280)');
     console.log('  --height <number>    Viewport height (default: 720)');
     console.log('');
-    console.log('Example: npx ts-node src/main.ts https://example.com');
+    console.log('Example: npx domtrace-playwright https://example.com');
     process.exit(1);
   }
 
