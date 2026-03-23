@@ -1,6 +1,6 @@
 {
   "name": "ai-ready-pw-codegen",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "AI-Ready PW Codegen — offline Playwright recorder with snapshots for AI-powered test generation",
   "author": "winst0niuss",
   "license": "MIT",
