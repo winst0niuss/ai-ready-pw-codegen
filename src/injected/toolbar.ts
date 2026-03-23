@@ -197,6 +197,25 @@ export function getToolbarScript(): string {
       if (waitForMode) exitWaitForMode();
     });
 
+    var sep2 = document.createElement('div');
+    sep2.className = 'toolbar-separator';
+    toolbar.appendChild(sep2);
+
+    var btnStop = document.createElement('button');
+    btnStop.className = 'btn-stop';
+    btnStop.textContent = 'Stop';
+    toolbar.appendChild(btnStop);
+
+    btnStop.addEventListener('click', function(e) {
+      e.stopPropagation();
+      console.debug(PREFIX + JSON.stringify({ type: 'stopRecording' }));
+      btnStop.disabled = true;
+      btnStop.textContent = 'Stopping...';
+      rec.style.animation = 'none';
+      rec.style.opacity = '0.3';
+      label.textContent = 'DONE';
+    });
+
     // Block event propagation from toolbar
     ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup'].forEach(function(evt) {
       toolbar.addEventListener(evt, function(e) { e.stopPropagation(); });

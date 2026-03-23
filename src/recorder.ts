@@ -21,6 +21,7 @@ export class Recorder {
   private actionQueue: Promise<void> = Promise.resolve();
   private lastNavigateUrl = '';
   private lastActionType = '';
+  private onStopRequested: (() => void) | null = null;
 
   constructor(page: Page, browser: Browser, startUrl: string, options: RecorderOptions) {
     this.page = page;
@@ -67,6 +68,10 @@ export class Recorder {
 
       try {
         const payload = JSON.parse(text.slice('__RECORDER__:'.length));
+        if (payload.type === 'stopRecording') {
+          if (this.onStopRequested) this.onStopRequested();
+          return;
+        }
         if (payload.type === 'spa-navigate') {
           if (payload.url !== this.lastNavigateUrl && this.lastActionType !== 'click') {
             this.lastNavigateUrl = payload.url;
@@ -224,9 +229,16 @@ export class Recorder {
     });
   }
 
+  onStop(callback: () => void): void {
+    this.onStopRequested = callback;
+  }
+
   async finalize(): Promise<void> {
-    // Wait for all queued actions to complete
-    await this.actionQueue;
+    // Ждём очередь, но не дольше 5 секунд (может зависнуть если браузер уже закрыт)
+    await Promise.race([
+      this.actionQueue,
+      new Promise((resolve) => setTimeout(resolve, 5000)),
+    ]);
 
     const metadata: SessionMetadata = {
       startUrl: this.startUrl,

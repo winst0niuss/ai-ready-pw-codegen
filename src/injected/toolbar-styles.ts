@@ -67,6 +67,22 @@ export function getToolbarStyles(): string {
     }
     .btn-mode.active:hover { opacity: 0.85; }
 
+    .btn-stop {
+      padding: 4px 10px;
+      background: #f38ba8;
+      color: #1e1e2e;
+      border: 1px solid #f38ba8;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: inherit;
+      transition: all 0.15s;
+      white-space: nowrap;
+      margin-left: 4px;
+    }
+    .btn-stop:hover { background: #eba0ac; border-color: #eba0ac; }
+
     @keyframes blink {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.3; }

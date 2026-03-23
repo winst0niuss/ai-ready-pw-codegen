@@ -57,6 +57,12 @@ async function main() {
     if (finalized) return;
     finalized = true;
 
+    // Гарантия завершения: если finalize зависнет, убиваем процесс через 10 секунд
+    setTimeout(() => {
+      console.error('\nForce exit: finalization timed out');
+      process.exit(1);
+    }, 10000).unref();
+
     try {
       await recorder.finalize();
       const archivePath = createArchive(outputDir);
@@ -69,6 +75,15 @@ async function main() {
     try { await browser.close(); } catch {}
     process.exit(0);
   }
+
+  // Кнопка Stop в тулбаре
+  recorder.onStop(finalize);
+
+  // Закрытие при закрытии последней страницы (крестик не убивает Chrome for Testing)
+  context.on('close', finalize);
+  page.on('close', () => {
+    if (context.pages().length === 0) finalize();
+  });
 
   // Browser close handlers
   browser.on('disconnected', finalize);
