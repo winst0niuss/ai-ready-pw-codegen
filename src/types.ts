@@ -1,3 +1,9 @@
+export interface ConsoleLogEntry {
+  level: 'log' | 'warn' | 'error' | 'info' | 'debug' | 'pageerror';
+  text: string;
+  timestamp: string;
+}
+
 export interface RecordedAction {
   index: number;
   timestamp: string;
@@ -8,9 +14,14 @@ export interface RecordedAction {
     value?: string;
     key?: string;
     codegenCode?: string;
+    position?: { x: number; y: number };
+    modifiers?: number;
+    button?: string;
+    clickCount?: number;
   };
   accessibilityTree: unknown;
   screenshotFile: string | null;
+  consoleLogs?: ConsoleLogEntry[];
 }
 
 export interface DomSnapshot {
@@ -31,6 +42,10 @@ export interface RecorderOptions {
   outputDir: string;
   screenshots: boolean;
   viewport: { width: number; height: number };
+  noArchive?: boolean;
+  maxActions?: number;
+  headless?: boolean;
+  captureConsole?: boolean;
 }
 
 // Data from Playwright codegen eventSink

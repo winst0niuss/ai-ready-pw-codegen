@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { spawnSync } from 'child_process';
 import path from 'path';
 
 export function createArchive(outputDir: string): string {
@@ -6,6 +6,10 @@ export function createArchive(outputDir: string): string {
   const parentDir = path.dirname(outputDir);
   const archivePath = path.join(parentDir, `${dirName}.tar.gz`);
 
-  execSync(`tar -czf "${archivePath}" -C "${parentDir}" "${dirName}"`);
+  const result = spawnSync('tar', ['-czf', archivePath, '-C', parentDir, dirName]);
+  if (result.status !== 0) {
+    const stderr = result.stderr?.toString() || 'unknown error';
+    throw new Error(`Failed to create archive: ${stderr}`);
+  }
   return archivePath;
 }

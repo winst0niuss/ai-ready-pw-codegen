@@ -34,8 +34,13 @@ Each line is a JSON object with fields:
 - \`action.value\` — input value (fill/select)
 - \`action.key\` — key name (press)
 - \`action.codegenCode\` — generated Playwright test code
+- \`action.position\` — click coordinates { x, y } (when available)
+- \`action.modifiers\` — keyboard modifiers (Shift, Ctrl, etc.)
+- \`action.button\` — mouse button (left/right/middle)
+- \`action.clickCount\` — single/double/triple click
 - \`accessibilityTree\` — page accessibility snapshot
 - \`screenshotFile\` — path to screenshot or null
+- \`consoleLogs\` — browser console messages since previous action (if captured)
 
 ### 2. snapshots.jsonl (on demand)
 Each line: \`{ "index": N, "cleanedDom": "..." }\`
