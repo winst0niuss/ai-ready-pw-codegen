@@ -15,10 +15,10 @@ export class Recorder {
   private startedAt: string;
   private startUrl: string;
   private actionQueue: Promise<void> = Promise.resolve();
-  // Для перезаписи при actionUpdated (codegen мержит keystrokes в fill)
+  // For overwriting on actionUpdated (codegen merges keystrokes into fill)
   private lastActionIndex = 0;
   private lastActionType = '';
-  // JSONL: храним строки для возможности перезаписи при actionUpdated
+  // JSONL: store lines for possible overwrite on actionUpdated
   private actionsLines: string[] = [];
   private snapshotsLines: string[] = [];
 
@@ -32,13 +32,13 @@ export class Recorder {
   }
 
   async start(): Promise<void> {
-    // Запускаем GUI инспектор codegen
+    // Launch codegen GUI inspector
     await (this.context as any)._enableRecorder({
       mode: 'recording',
       language: 'playwright-test',
     });
 
-    // Подключаем eventSink для захвата действий
+    // Attach eventSink for action capture
     await (this.context as any)._enableRecorder(
       { mode: 'recording', language: 'playwright-test', recorderMode: 'api' },
       {
@@ -68,7 +68,7 @@ export class Recorder {
   ): Promise<void> {
     const actionName = data.action.name;
 
-    // При обновлении (actionUpdated) — перезаписываем последнее действие
+    // On update (actionUpdated) — overwrite the last action
     let index: number;
     if (isUpdate && this.lastActionIndex > 0) {
       index = this.lastActionIndex;
@@ -92,14 +92,14 @@ export class Recorder {
     const selector = data.action.selector || '';
     console.log(`[${paddedIndex}] ${actionName}${selector ? ' → ' + selector : ''} (${url})`);
 
-    // Ждём стабилизации DOM
+    // Wait for DOM stabilization
     try {
       await page.waitForTimeout(100);
     } catch {
-      // Страница могла закрыться
+      // Page may have been closed
     }
 
-    // Снимки
+    // Snapshots
     let accessibilityTree: unknown = null;
     let cleanedDom = '';
 
@@ -115,7 +115,7 @@ export class Recorder {
       cleanedDom = '<error>failed to capture DOM</error>';
     }
 
-    // Скриншот
+    // Screenshot
     let screenshotFile: string | null = null;
     if (this.options.screenshots) {
       try {
@@ -124,7 +124,7 @@ export class Recorder {
         writeScreenshot(screenshotPath, buffer);
         screenshotFile = `screenshots/${paddedIndex}-${actionName}.png`;
       } catch {
-        // Скриншот некритичен
+        // Screenshot is non-critical
       }
     }
 
@@ -148,20 +148,20 @@ export class Recorder {
       cleanedDom,
     };
 
-    // При actionUpdated перезаписываем последнюю строку (index - 1 т.к. массив 0-based)
+    // On actionUpdated overwrite the last line (index - 1 since array is 0-based)
     const lineIdx = index - 1;
     this.actionsLines[lineIdx] = JSON.stringify(action);
     this.snapshotsLines[lineIdx] = JSON.stringify(snapshot);
   }
 
   async finalize(): Promise<SessionMetadata> {
-    // Ждём очередь, но не дольше 5 секунд
+    // Wait for queue to drain, but no longer than 5 seconds
     await Promise.race([
       this.actionQueue,
       new Promise((resolve) => setTimeout(resolve, 5000)),
     ]);
 
-    // Записываем JSONL файлы
+    // Write JSONL files
     const actionsPath = path.join(this.outputDir, 'actions.jsonl');
     fs.writeFileSync(actionsPath, this.actionsLines.join('\n') + '\n', 'utf-8');
 

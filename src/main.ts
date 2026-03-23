@@ -57,7 +57,7 @@ async function main() {
     if (finalized) return;
     finalized = true;
 
-    // Гарантия завершения через 10 секунд
+    // Force exit after 10 seconds
     setTimeout(() => {
       console.error('\nForce exit: finalization timed out');
       process.exit(1);

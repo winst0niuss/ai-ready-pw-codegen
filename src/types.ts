@@ -33,7 +33,7 @@ export interface RecorderOptions {
   viewport: { width: number; height: number };
 }
 
-// Данные из Playwright codegen eventSink
+// Data from Playwright codegen eventSink
 export interface CodegenActionData {
   frame: { pageGuid: string; framePath: string[] };
   action: {
