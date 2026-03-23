@@ -1,12 +1,9 @@
 // Функция для выполнения через page.evaluate()
-// Очищает DOM вокруг целевого элемента, оставляя только test-relevant данные
+// Очищает полный DOM страницы, оставляя только test-relevant данные
 // Возвращает функцию-строку — типизация DOM здесь не нужна, код выполняется в браузере
 export function getDomCleanerScript(): () => string {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fn = function (this: any) {
-    const target = (window as any).__RECORDER_LAST_TARGET__ as any;
-    if (!target) return '<no-target/>';
-
     const ALLOWED_ATTRS = new Set([
       'id', 'class', 'data-testid', 'data-test', 'data-cy', 'data-qa',
       'aria-label', 'aria-labelledby', 'aria-describedby', 'aria-expanded',
@@ -15,23 +12,20 @@ export function getDomCleanerScript(): () => string {
       'action', 'method', 'src', 'alt', 'title'
     ]);
 
-    const SCOPE_TAGS = new Set(['FORM', 'SECTION', 'DIALOG', 'MAIN', 'ARTICLE', 'NAV', 'HEADER', 'FOOTER']);
     const REMOVE_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'LINK', 'META']);
-    const MAX_DEPTH = 8;
+    const MAX_DEPTH = 15;
     const MAX_TEXT_LENGTH = 200;
 
-    // Находим scope root
-    let scope = target;
-    let stepsUp = 0;
-    while (scope.parentElement && stepsUp < 3) {
-      scope = scope.parentElement;
-      stepsUp++;
-      if (SCOPE_TAGS.has(scope.tagName)) break;
-      if (scope.getAttribute('role') === 'dialog') break;
-    }
+    // Клонируем весь документ от body
+    const body = document.body;
+    if (!body) return '<no-body/>';
 
-    // Клонируем и чистим
-    const clone = scope.cloneNode(true);
+    const clone = body.cloneNode(true) as HTMLElement;
+
+    // Удаляем overlay рекордера
+    const overlayHost = clone.querySelector('#__recorder-overlay-host');
+    if (overlayHost) overlayHost.remove();
+
     cleanNode(clone, 0);
 
     function cleanNode(node: any, depth: number): void {
@@ -61,6 +55,7 @@ export function getDomCleanerScript(): () => string {
         return;
       }
 
+      // Убираем лишние атрибуты
       const attrsToRemove: string[] = [];
       for (const attr of Array.from(el.attributes) as any[]) {
         if (!ALLOWED_ATTRS.has(attr.name) && !attr.name.startsWith('aria-')) {
