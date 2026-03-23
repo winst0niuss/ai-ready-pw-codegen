@@ -52,10 +52,9 @@ Playwright Codegen (built-in recorder)
 
 ```
 recordings/recording-YYYY-MM-DDTHH-mm-ss/
-├── metadata.json           # startUrl, timestamps, totalActions, viewport
-├── actions/
-│   ├── 001-navigate.json   # { index, timestamp, url, action, snapshot, screenshotFile }
-│   └── 002-click.json
+├── ANALYSIS_PROMPT.md      # AI instructions + session metadata inline
+├── actions.jsonl           # all actions, one JSON per line (primary file)
+├── snapshots.jsonl         # cleaned DOM snapshots, one per line (on demand)
 └── screenshots/
     ├── 001-navigate.png
     └── 002-click.png
@@ -63,4 +62,4 @@ recordings/recording-YYYY-MM-DDTHH-mm-ss/
 
 Action types are determined by Playwright codegen: `navigate`, `click`, `fill`, `press`, `select`, `check`, `uncheck`, `hover`, etc.
 
-Each action JSON includes `action.codegenCode` — the generated Playwright test code snippet.
+Each action line in `actions.jsonl` includes `action.codegenCode` (generated Playwright code), `accessibilityTree`, and `screenshotFile`. DOM snapshots are in separate `snapshots.jsonl` to save context window.

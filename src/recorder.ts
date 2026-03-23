@@ -1,9 +1,10 @@
 import type { Page, BrowserContext } from 'playwright';
+import fs from 'fs';
 import path from 'path';
 import { CodegenActionData, RecordedAction, SessionMetadata, RecorderOptions } from './types';
 import { getDomCleanerScript } from './snapshot/dom-cleaner';
 import { captureAccessibilityTree } from './snapshot/accessibility';
-import { writeJSON, writeScreenshot } from './utils/fs-helpers';
+import { writeScreenshot } from './utils/fs-helpers';
 
 export class Recorder {
   private context: BrowserContext;
@@ -17,6 +18,9 @@ export class Recorder {
   // Для перезаписи при actionUpdated (codegen мержит keystrokes в fill)
   private lastActionIndex = 0;
   private lastActionType = '';
+  // JSONL: храним строки для возможности перезаписи при actionUpdated
+  private actionsLines: string[] = [];
+  private snapshotsLines: string[] = [];
 
   constructor(context: BrowserContext, page: Page, startUrl: string, options: RecorderOptions) {
     this.context = context;
@@ -135,23 +139,34 @@ export class Recorder {
         ...(data.action.key !== undefined && { key: data.action.key }),
         codegenCode: code,
       },
-      snapshot: {
-        accessibilityTree,
-        cleanedDom,
-      },
+      accessibilityTree,
       screenshotFile,
     };
 
-    const actionPath = path.join(this.outputDir, 'actions', `${paddedIndex}-${actionName}.json`);
-    writeJSON(actionPath, action);
+    const snapshot = {
+      index,
+      cleanedDom,
+    };
+
+    // При actionUpdated перезаписываем последнюю строку (index - 1 т.к. массив 0-based)
+    const lineIdx = index - 1;
+    this.actionsLines[lineIdx] = JSON.stringify(action);
+    this.snapshotsLines[lineIdx] = JSON.stringify(snapshot);
   }
 
-  async finalize(): Promise<void> {
+  async finalize(): Promise<SessionMetadata> {
     // Ждём очередь, но не дольше 5 секунд
     await Promise.race([
       this.actionQueue,
       new Promise((resolve) => setTimeout(resolve, 5000)),
     ]);
+
+    // Записываем JSONL файлы
+    const actionsPath = path.join(this.outputDir, 'actions.jsonl');
+    fs.writeFileSync(actionsPath, this.actionsLines.join('\n') + '\n', 'utf-8');
+
+    const snapshotsPath = path.join(this.outputDir, 'snapshots.jsonl');
+    fs.writeFileSync(snapshotsPath, this.snapshotsLines.join('\n') + '\n', 'utf-8');
 
     const metadata: SessionMetadata = {
       startUrl: this.startUrl,
@@ -162,7 +177,7 @@ export class Recorder {
       viewportSize: this.options.viewport,
     };
 
-    writeJSON(path.join(this.outputDir, 'metadata.json'), metadata);
     console.log(`\nRecorded ${this.actionIndex} actions`);
+    return metadata;
   }
 }

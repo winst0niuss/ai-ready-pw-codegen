@@ -64,8 +64,8 @@ async function main() {
     }, 10000).unref();
 
     try {
-      await recorder.finalize();
-      writeAnalysisPrompt(outputDir);
+      const metadata = await recorder.finalize();
+      writeAnalysisPrompt(outputDir, metadata);
       const archivePath = createArchive(outputDir);
       console.log(`\nArchive: ${archivePath}`);
       console.log('Done! Send the archive to Claude Code for analysis.');

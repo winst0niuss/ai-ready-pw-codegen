@@ -1,49 +1,62 @@
 import fs from 'fs';
 import path from 'path';
+import { SessionMetadata } from '../types';
 
-const PROMPT = `# DOMTrace Recording — Analysis Instructions
+export function writeAnalysisPrompt(outputDir: string, metadata: SessionMetadata): void {
+  const prompt = `# DOMTrace Recording
 
-You are analyzing a recording captured by DOMTrace — an offline Playwright recorder.
-The archive contains user interactions with DOM snapshots, accessibility trees, and screenshots.
+## Session Info
+- **URL:** ${metadata.startUrl}
+- **Actions:** ${metadata.totalActions}
+- **Viewport:** ${metadata.viewportSize.width}x${metadata.viewportSize.height}
+- **Browser:** ${metadata.browserType}
+- **Started:** ${metadata.startedAt}
+- **Ended:** ${metadata.endedAt}
 
 ## Archive Structure
 
-- \`metadata.json\` — session info: start URL, timestamps, viewport, total actions count
-- \`actions/NNN-<type>.json\` — individual recorded actions in order
-- \`screenshots/NNN-<type>.png\` — corresponding screenshots (if enabled)
+\`\`\`
+├── ANALYSIS_PROMPT.md    ← you are here
+├── actions.jsonl          ← all actions, one JSON per line (start here)
+├── snapshots.jsonl        ← cleaned DOM snapshots, one per line (read on demand)
+└── screenshots/           ← PNG screenshots matching action index
+\`\`\`
 
-## Action JSON Format
+## How to Read
 
-Each action file contains:
-- \`index\` — sequential action number
+### 1. actions.jsonl (primary file)
+Each line is a JSON object with fields:
+- \`index\` — sequential number (001, 002, ...)
 - \`timestamp\` — ISO timestamp
-- \`url\` — page URL at the time of action
-- \`action.type\` — action type: navigate, click, fill, press, select, check, uncheck, hover, assertVisible, etc.
-- \`action.selector\` — Playwright selector used
-- \`action.value\` — input value (for fill/select)
-- \`action.key\` — key name (for press)
-- \`action.codegenCode\` — generated Playwright code snippet
-- \`snapshot.accessibilityTree\` — page accessibility tree at action time
-- \`snapshot.cleanedDom\` — cleaned DOM snapshot (non-test attributes stripped, max depth 15)
-- \`screenshotFile\` — relative path to screenshot (or null)
+- \`url\` — page URL at action time
+- \`action.type\` — navigate, click, fill, press, select, check, uncheck, hover, assertVisible
+- \`action.selector\` — Playwright selector
+- \`action.value\` — input value (fill/select)
+- \`action.key\` — key name (press)
+- \`action.codegenCode\` — generated Playwright test code
+- \`accessibilityTree\` — page accessibility snapshot
+- \`screenshotFile\` — path to screenshot or null
 
-## What You Can Do With This Data
+### 2. snapshots.jsonl (on demand)
+Each line: \`{ "index": N, "cleanedDom": "..." }\`
+DOM snapshots are large — only read when you need element structure details not visible in the accessibility tree.
 
-1. **Generate E2E Tests** — use \`codegenCode\` as a base, enhance with proper assertions from accessibility tree and DOM
-2. **Create Page Objects** — extract selectors and group by page/component using DOM structure
-3. **Analyze User Flow** — understand the recorded scenario from actions sequence and screenshots
-4. **Find Accessibility Issues** — review accessibility tree snapshots for missing labels, roles, etc.
-5. **Generate Test Data** — extract filled values and interactions for test data sets
+### 3. screenshots/ (visual reference)
+Files named \`NNN-<action>.png\`, matching action index.
 
-## Recommendations
+## What You Can Do
 
-- Start by reading \`metadata.json\` to understand the session context
-- Process actions in order (by index) to follow the user flow
-- Use screenshots to visually verify page state when DOM/accessibility data is ambiguous
-- The \`codegenCode\` field contains working Playwright code — use it as a starting point, not final output
-- Selectors from codegen use Playwright's internal format — consider converting to more stable selectors (data-testid, role-based)
+1. **Generate E2E tests** — use \`codegenCode\` as base, add assertions from accessibility tree
+2. **Create Page Objects** — group selectors by page using URL changes and DOM structure
+3. **Analyze user flow** — follow actions in order, use screenshots for visual context
+4. **Find accessibility issues** — check accessibility tree for missing labels/roles
+5. **Suggest better selectors** — replace codegen selectors with stable ones (data-testid, role-based)
+
+## Tips
+- Read \`actions.jsonl\` first — it has everything for most tasks
+- Only open \`snapshots.jsonl\` if accessibility tree lacks needed details
+- Codegen selectors use Playwright internal format — convert for production tests
 `;
 
-export function writeAnalysisPrompt(outputDir: string): void {
-  fs.writeFileSync(path.join(outputDir, 'ANALYSIS_PROMPT.md'), PROMPT, 'utf-8');
+  fs.writeFileSync(path.join(outputDir, 'ANALYSIS_PROMPT.md'), prompt, 'utf-8');
 }

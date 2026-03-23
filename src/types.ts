@@ -9,11 +9,13 @@ export interface RecordedAction {
     key?: string;
     codegenCode?: string;
   };
-  snapshot: {
-    accessibilityTree: unknown;
-    cleanedDom: string;
-  };
+  accessibilityTree: unknown;
   screenshotFile: string | null;
+}
+
+export interface DomSnapshot {
+  index: number;
+  cleanedDom: string;
 }
 
 export interface SessionMetadata {
