@@ -1,6 +1,6 @@
-# Instructions for Analyzing SnapScribe Recordings
+# Instructions for Analyzing DOMTrace Recordings
 
-You are analyzing a recording archive produced by **SnapScribe** — an offline Playwright recorder. Your goal is to generate production-quality Playwright test code from the captured user session.
+You are analyzing a recording archive produced by **DOMTrace** — an offline Playwright recorder. Your goal is to generate production-quality Playwright test code from the captured user session.
 
 ## Archive Structure
 

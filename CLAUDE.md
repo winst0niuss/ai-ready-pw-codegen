@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-**SnapScribe** — offline Playwright recorder that captures user interactions with DOM snapshots, accessibility trees, and screenshots for later AI analysis (test generation, Page Object creation). Acts as an "offline MCP Playwright" — record on a machine without AI access, then send the archive to Claude Code.
+**DOMTrace** — offline Playwright recorder that captures user interactions with DOM snapshots, accessibility trees, and screenshots for later AI analysis (test generation, Page Object creation). Acts as an "offline MCP Playwright" — record on a machine without AI access, then send the archive to Claude Code.
 
 ## Commands
 

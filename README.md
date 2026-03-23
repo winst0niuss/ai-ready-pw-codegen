@@ -1,10 +1,10 @@
-# SnapScribe
+# DOMTrace
 
 Offline Playwright recorder that captures user interactions with DOM snapshots, accessibility trees, and screenshots — then packages everything into an archive for AI-powered test generation.
 
 > Record on any machine. Generate tests with AI later.
 
-## Why SnapScribe?
+## Why DOMTrace?
 
 - **Offline-first** — no AI connection needed during recording
 - **Rich context** — each action captures cleaned DOM, accessibility tree, and screenshot
