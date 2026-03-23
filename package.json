@@ -1,0 +1,22 @@
+{
+  "name": "full-codegen-recorder",
+  "version": "1.0.0",
+  "description": "Офлайн Playwright recorder с DOM-снэпшотами для AI-анализа",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "ts-node src/main.ts",
+    "record": "ts-node src/main.ts"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "playwright": "^1.42.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
