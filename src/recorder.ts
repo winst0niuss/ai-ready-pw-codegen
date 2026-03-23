@@ -17,15 +17,14 @@ export class Recorder {
   private startedAt: string;
   private startUrl: string;
   private actionQueue: Promise<void> = Promise.resolve();
-  // Для перезаписи при actionUpdated (codegen объединяет нажатия в fill)
+  // For overwriting on actionUpdated (codegen merges keystrokes into fill)
   private lastActionIndex = 0;
-  private lastActionType = '';
-  // JSONL: храним строки для возможной перезаписи при actionUpdated
+  // JSONL lines stored for possible overwrite on actionUpdated
   private actionsLines: string[] = [];
   private snapshotsLines: string[] = [];
-  // Console logs между действиями
+  // Console logs accumulated between actions
   private pendingConsoleLogs: ConsoleLogEntry[] = [];
-  // Колбэк для остановки по max-actions
+  // Callback to stop on max-actions
   private onMaxActionsReached?: () => void;
   private needsProtocolFallback: boolean;
 
@@ -40,7 +39,7 @@ export class Recorder {
   }
 
   async start(): Promise<void> {
-    // Подписка на console-логи
+    // Subscribe to console logs
     if (this.options.captureConsole !== false) {
       this.page.on('console', (msg: ConsoleMessage) => {
         this.pendingConsoleLogs.push({
@@ -58,13 +57,13 @@ export class Recorder {
       });
     }
 
-    // Запуск GUI inspector codegen
+    // Launch codegen GUI inspector
     await (this.context as any)._enableRecorder({
       mode: 'recording',
       language: 'playwright-test',
     });
 
-    // Подключение eventSink для захвата действий
+    // Attach eventSink for action capture
     await (this.context as any)._enableRecorder(
       { mode: 'recording', language: 'playwright-test', recorderMode: 'api' },
       {
@@ -77,7 +76,7 @@ export class Recorder {
       }
     );
 
-    // Определяем протокол: если не указан — пробуем http, затем https
+    // Auto-detect protocol: try http first, fall back to https
     if (this.needsProtocolFallback) {
       try {
         await this.page.goto(`http://${this.startUrl}`, { waitUntil: 'domcontentloaded' });
@@ -91,7 +90,7 @@ export class Recorder {
     }
   }
 
-  /** Регистрирует колбэк для остановки по max-actions */
+  /** Register callback to stop on max-actions */
   onStop(callback: () => void): void {
     this.onMaxActionsReached = callback;
   }
@@ -110,7 +109,7 @@ export class Recorder {
   ): Promise<void> {
     const actionName = data.action.name;
 
-    // При update (actionUpdated) — перезаписываем последнее действие
+    // On update (actionUpdated) — overwrite the last action
     let index: number;
     if (isUpdate && this.lastActionIndex > 0) {
       index = this.lastActionIndex;
@@ -119,7 +118,6 @@ export class Recorder {
       index = this.actionIndex;
     }
     this.lastActionIndex = index;
-    this.lastActionType = actionName;
 
     const paddedIndex = String(index).padStart(3, '0');
     const timestamp = new Date().toISOString();
@@ -133,14 +131,14 @@ export class Recorder {
 
     const selector = data.action.selector || '';
 
-    // Ожидание стабилизации DOM
+    // Wait for DOM stabilization
     try {
       await page.waitForTimeout(100);
     } catch {
-      // Страница могла закрыться
+      // Page may have been closed
     }
 
-    // Захват снапшотов
+    // Capture snapshots
     let accessibilityTree: unknown = null;
     let cleanedDom = '';
     let hasFailed = false;
@@ -159,7 +157,7 @@ export class Recorder {
       hasFailed = true;
     }
 
-    // Скриншот
+    // Screenshot
     let screenshotFile: string | null = null;
     if (this.options.screenshots) {
       try {
@@ -172,7 +170,7 @@ export class Recorder {
       }
     }
 
-    // Собираем console-логи, накопленные с предыдущего действия
+    // Flush console logs accumulated since previous action
     const consoleLogs = this.pendingConsoleLogs.length > 0 ? [...this.pendingConsoleLogs] : undefined;
     this.pendingConsoleLogs = [];
 
@@ -201,16 +199,16 @@ export class Recorder {
       cleanedDom,
     };
 
-    // При actionUpdated перезаписываем последнюю строку (index - 1, т.к. массив с 0)
+    // On actionUpdated overwrite the last line (index - 1 since array is 0-based)
     const lineIdx = index - 1;
     this.actionsLines[lineIdx] = JSON.stringify(action);
     this.snapshotsLines[lineIdx] = JSON.stringify(snapshot);
 
-    // Минимальный прогресс: цветная точка
+    // Minimal progress: colored dot
     const dot = hasFailed ? '\x1b[33m●\x1b[0m' : '\x1b[32m●\x1b[0m';
     process.stdout.write(dot);
 
-    // Остановка по max-actions
+    // Stop on max-actions
     if (this.options.maxActions && this.actionIndex >= this.options.maxActions) {
       process.stdout.write('\n');
       this.onMaxActionsReached?.();
@@ -218,13 +216,13 @@ export class Recorder {
   }
 
   async finalize(): Promise<SessionMetadata> {
-    // Ждём очередь, но не дольше таймаута
+    // Wait for queue to drain, but no longer than timeout
     await Promise.race([
       this.actionQueue,
       new Promise((resolve) => setTimeout(resolve, QUEUE_DRAIN_TIMEOUT_MS)),
     ]);
 
-    // Запись JSONL файлов
+    // Write JSONL files
     const actionsPath = path.join(this.outputDir, 'actions.jsonl');
     fs.writeFileSync(actionsPath, this.actionsLines.join('\n') + '\n', 'utf-8');
 
