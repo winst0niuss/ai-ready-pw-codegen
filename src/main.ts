@@ -48,7 +48,7 @@ async function main() {
   });
   const page = await context.newPage();
 
-  const recorder = new Recorder(page, url, options);
+  const recorder = new Recorder(page, browser, url, options);
 
   // Обработка завершения
   let finalized = false;

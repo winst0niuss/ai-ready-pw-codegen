@@ -22,9 +22,9 @@ export function getDomCleanerScript(): () => string {
 
     const clone = body.cloneNode(true) as HTMLElement;
 
-    // Удаляем overlay рекордера
-    const overlayHost = clone.querySelector('#__recorder-overlay-host');
-    if (overlayHost) overlayHost.remove();
+    // Удаляем тулбар рекордера
+    const toolbarHost = clone.querySelector('#__recorder-toolbar-host__');
+    if (toolbarHost) toolbarHost.remove();
 
     cleanNode(clone, 0);
 

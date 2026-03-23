@@ -1,14 +1,17 @@
-import type { Page } from 'playwright';
+import type { Page, BrowserContext, Browser } from 'playwright';
 import path from 'path';
 import { BrowserActionPayload, RecordedAction, SessionMetadata, RecorderOptions } from './types';
 import { getListenerScript } from './injected/listener';
-import { getOverlayScript } from './injected/overlay';
+import { getToolbarScript } from './injected/toolbar';
 import { getDomCleanerScript } from './snapshot/dom-cleaner';
 import { captureAccessibilityTree } from './snapshot/accessibility';
 import { writeJSON, writeScreenshot } from './utils/fs-helpers';
+import { getOverlayWindowHTML } from './overlay-window';
 
 export class Recorder {
   private page: Page;
+  private browser: Browser;
+  private overlayPage: Page | null = null;
   private outputDir: string;
   private options: RecorderOptions;
   private actionIndex = 0;
@@ -16,9 +19,12 @@ export class Recorder {
   private startUrl: string;
   // Promise-очередь для последовательной обработки действий
   private actionQueue: Promise<void> = Promise.resolve();
+  private lastNavigateUrl = '';
+  private lastActionType = '';
 
-  constructor(page: Page, startUrl: string, options: RecorderOptions) {
+  constructor(page: Page, browser: Browser, startUrl: string, options: RecorderOptions) {
     this.page = page;
+    this.browser = browser;
     this.outputDir = options.outputDir;
     this.options = options;
     this.startedAt = new Date().toISOString();
@@ -26,21 +32,49 @@ export class Recorder {
   }
 
   async start(): Promise<void> {
-    // Инжектируем скрипт-слушатель и UI overlay
-    await this.page.addInitScript(getListenerScript());
-    await this.page.addInitScript(getOverlayScript());
+    // Открываем окно лога действий в отдельном контексте (= отдельное окно браузера)
+    const overlayContext = await this.browser.newContext({
+      viewport: { width: 500, height: 700 },
+    });
+    this.overlayPage = await overlayContext.newPage();
+    await this.overlayPage.setContent(getOverlayWindowHTML());
+    // Не даём закрытию overlay-окна ломать запись
+    this.overlayPage.on('close', () => { this.overlayPage = null; });
 
-    // Слушаем события от инжектированного скрипта
-    this.page.on('console', (msg) => {
+    // Инжектируем скрипты на уровне контекста — работает для всех вкладок
+    const context = this.page.context();
+    await context.addInitScript(getListenerScript());
+    await context.addInitScript(getToolbarScript());
+
+    // Подключаем слушатели к странице
+    this.attachPageListeners(this.page);
+
+    // Переключаем фокус при открытии новой вкладки
+    context.on('page', (newPage) => {
+      // Игнорируем overlay-окно (оно в другом контексте)
+      console.log('[recorder] Новая вкладка, переключаем фокус');
+      this.switchToPage(newPage);
+    });
+
+    // Первая навигация
+    await this.page.goto(this.startUrl, { waitUntil: 'domcontentloaded' });
+  }
+
+  private attachPageListeners(page: Page): void {
+    page.on('console', (msg) => {
       if (msg.type() !== 'debug') return;
       const text = msg.text();
       if (!text.startsWith('__RECORDER__:')) return;
 
       try {
         const payload = JSON.parse(text.slice('__RECORDER__:'.length));
-        // SPA-навигация — записываем как navigate
         if (payload.type === 'spa-navigate') {
-          this.enqueueAction('navigate', undefined, payload.url);
+          if (payload.url !== this.lastNavigateUrl && this.lastActionType !== 'click') {
+            this.lastNavigateUrl = payload.url;
+            this.enqueueAction('navigate', undefined, payload.url);
+          } else {
+            this.lastNavigateUrl = payload.url;
+          }
           return;
         }
         this.enqueueAction(payload.type, payload);
@@ -49,19 +83,34 @@ export class Recorder {
       }
     });
 
-    // Навигации
-    this.page.on('framenavigated', (frame) => {
-      if (frame !== this.page.mainFrame()) return;
+    page.on('framenavigated', (frame) => {
+      if (frame !== page.mainFrame()) return;
+      const url = page.url();
+      if (url === this.lastNavigateUrl) return;
+      if (this.lastActionType === 'click') {
+        this.lastNavigateUrl = url;
+        return;
+      }
+      this.lastNavigateUrl = url;
       this.enqueueAction('navigate');
     });
 
-    // Автоматическое закрытие диалогов
-    this.page.on('dialog', async (dialog) => {
+    page.on('dialog', async (dialog) => {
       await dialog.dismiss();
     });
+  }
 
-    // Первая навигация
-    await this.page.goto(this.startUrl, { waitUntil: 'domcontentloaded' });
+  private switchToPage(newPage: Page): void {
+    this.page = newPage;
+    this.attachPageListeners(newPage);
+    // Записываем navigate на новую вкладку
+    newPage.once('load', () => {
+      const url = newPage.url();
+      if (url !== this.lastNavigateUrl) {
+        this.lastNavigateUrl = url;
+        this.enqueueAction('navigate', undefined, url);
+      }
+    });
   }
 
   private enqueueAction(
@@ -69,6 +118,7 @@ export class Recorder {
     payload?: BrowserActionPayload,
     urlOverride?: string
   ): void {
+    this.lastActionType = type;
     this.actionQueue = this.actionQueue.then(() =>
       this.processAction(type, payload, urlOverride)
     );
@@ -149,9 +199,30 @@ export class Recorder {
       screenshotFile,
     };
 
-    // Сохраняем
+    // Сохраняем на диск
     const actionPath = path.join(this.outputDir, 'actions', `${paddedIndex}-${type}.json`);
     writeJSON(actionPath, action);
+
+    // Отправляем в окно лога
+    this.pushToOverlay(action);
+  }
+
+  private pushToOverlay(action: RecordedAction): void {
+    if (!this.overlayPage) return;
+    const data = {
+      index: action.index,
+      type: action.action.type,
+      url: action.url,
+      selector: action.action.elementInfo?.cssSelector || '',
+      value: action.action.value || '',
+      key: action.action.key || '',
+      condition: action.action.condition || '',
+    };
+    this.overlayPage.evaluate((d: typeof data) => {
+      (window as any).__addAction(d);
+    }, data).catch(() => {
+      // Окно лога могло быть закрыто
+    });
   }
 
   async finalize(): Promise<void> {

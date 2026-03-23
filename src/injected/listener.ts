@@ -10,11 +10,11 @@ export function getListenerScript(): string {
   let inputTimer = null;
   let lastInputTarget = null;
 
-  // Guard: не записываем события от overlay панели
+  // Guard: не записываем события от тулбара рекордера
   function isOverlayElement(el) {
     var node = el;
     while (node) {
-      if (node.id === '__recorder-overlay-host__') return true;
+      if (node.id === '__recorder-toolbar-host__') return true;
       node = node.parentElement;
     }
     return false;
@@ -50,25 +50,78 @@ export function getListenerScript(): string {
     } catch { return null; }
   }
 
-  // Генерация CSS-селектора
+  // Генерация CSS-селектора (приоритет как в Playwright codegen)
   function getCssSelector(el) {
-    if (el.id) return '#' + CSS.escape(el.id);
-
-    const testId = el.getAttribute('data-testid') || el.getAttribute('data-test') || el.getAttribute('data-cy');
+    // 1. data-testid / data-test / data-cy
+    var testId = el.getAttribute('data-testid') || el.getAttribute('data-test') || el.getAttribute('data-cy');
     if (testId) return '[data-testid="' + testId + '"]';
 
-    const tag = el.tagName.toLowerCase();
-    const parent = el.parentElement;
+    // 2. id (если не автогенерированный)
+    if (el.id && !/^\d|^[:-]|--/.test(el.id)) return '#' + CSS.escape(el.id);
+
+    var tag = el.tagName.toLowerCase();
+
+    // 3. role + name (aria-label или текст)
+    var role = el.getAttribute('role') || getImplicitRole(el);
+    var ariaLabel = el.getAttribute('aria-label');
+    if (role && ariaLabel) return tag + '[role="' + role + '"][aria-label="' + ariaLabel.replace(/"/g, '\\"') + '"]';
+
+    // 4. aria-label без role
+    if (ariaLabel) return tag + '[aria-label="' + ariaLabel.replace(/"/g, '\\"') + '"]';
+
+    // 5. placeholder (для input/textarea)
+    var placeholder = el.getAttribute('placeholder');
+    if (placeholder && (tag === 'input' || tag === 'textarea')) return tag + '[placeholder="' + placeholder.replace(/"/g, '\\"') + '"]';
+
+    // 6. alt (для img)
+    var alt = el.getAttribute('alt');
+    if (alt && tag === 'img') return 'img[alt="' + alt.replace(/"/g, '\\"') + '"]';
+
+    // 7. Уникальный текст для кликабельных элементов (a, button)
+    if (tag === 'a' || tag === 'button') {
+      var text = (el.textContent || '').trim();
+      if (text && text.length < 50) {
+        var escapedText = text.replace(/"/g, '\\"');
+        // Проверяем уникальность через :has-text нельзя в CSS, используем role+name паттерн
+        if (role) return tag + '[role="' + role + '"]:text("' + escapedText + '")';
+      }
+    }
+
+    // 8. name атрибут (для form-элементов)
+    var name = el.getAttribute('name');
+    if (name && (tag === 'input' || tag === 'select' || tag === 'textarea')) return tag + '[name="' + name + '"]';
+
+    // 9. Fallback: рекурсивный CSS path
+    var parent = el.parentElement;
     if (!parent) return tag;
 
-    const siblings = Array.from(parent.children).filter(c => c.tagName === el.tagName);
+    var siblings = Array.from(parent.children).filter(function(c) { return c.tagName === el.tagName; });
     if (siblings.length === 1) {
-      const parentSelector = getCssSelector(parent);
-      return parentSelector + ' > ' + tag;
+      return getCssSelector(parent) + ' > ' + tag;
     }
-    const index = siblings.indexOf(el) + 1;
-    const parentSelector = getCssSelector(parent);
-    return parentSelector + ' > ' + tag + ':nth-child(' + index + ')';
+    var index = siblings.indexOf(el) + 1;
+    return getCssSelector(parent) + ' > ' + tag + ':nth-child(' + index + ')';
+  }
+
+  function getImplicitRole(el) {
+    var tag = el.tagName;
+    if (tag === 'A' && el.hasAttribute('href')) return 'link';
+    if (tag === 'BUTTON') return 'button';
+    if (tag === 'INPUT') {
+      var type = (el.getAttribute('type') || 'text').toLowerCase();
+      if (type === 'checkbox') return 'checkbox';
+      if (type === 'radio') return 'radio';
+      if (type === 'submit' || type === 'button' || type === 'reset') return 'button';
+      return 'textbox';
+    }
+    if (tag === 'SELECT') return 'combobox';
+    if (tag === 'TEXTAREA') return 'textbox';
+    if (tag === 'IMG') return 'img';
+    if (tag === 'NAV') return 'navigation';
+    if (tag === 'MAIN') return 'main';
+    if (tag === 'HEADER') return 'banner';
+    if (tag === 'FOOTER') return 'contentinfo';
+    return '';
   }
 
   // Генерация простого XPath
@@ -107,6 +160,9 @@ export function getListenerScript(): string {
     }, extra || {});
   }
 
+  // Делаем buildPayload доступным для toolbar (waitFor)
+  window.__RECORDER_BUILD_PAYLOAD__ = buildPayload;
+
   function send(payload) {
     window.__RECORDER_LAST_TARGET__ = null; // сбрасываем перед установкой нового
     try {
@@ -116,20 +172,41 @@ export function getListenerScript(): string {
       if (el) window.__RECORDER_LAST_TARGET__ = el;
     } catch {}
     console.debug(PREFIX + JSON.stringify(payload));
-
-    // Уведомляем overlay панель
-    document.dispatchEvent(new CustomEvent('__recorder_action__', {
-      detail: { type: payload.type, selector: payload.cssSelector, value: payload.value, key: payload.key }
-    }));
   }
 
-  // Click
-  document.addEventListener('click', function(e) {
+  // Click — с fallback на mousedown для IDE (Theia/Monaco), где click может не генерироваться
+  let pendingMousedown = null;
+  let mousedownTimer = null;
+
+  document.addEventListener('mousedown', function(e) {
+    if (window.__RECORDER_WAITFOR_MODE__) return;
     const el = e.target;
     if (!el || !el.tagName) return;
     if (isOverlayElement(el)) return;
-    // Пропускаем клик по select — будет change
     if (el.tagName === 'SELECT') return;
+    // Запоминаем mousedown, ждём click 400мс
+    clearTimeout(mousedownTimer);
+    pendingMousedown = el;
+    mousedownTimer = setTimeout(function() {
+      // Click не пришёл — записываем mousedown как click (IDE-режим)
+      if (pendingMousedown) {
+        const payload = buildPayload('click', pendingMousedown);
+        payload._element = pendingMousedown;
+        send(payload);
+        pendingMousedown = null;
+      }
+    }, 400);
+  }, true);
+
+  document.addEventListener('click', function(e) {
+    if (window.__RECORDER_WAITFOR_MODE__) return;
+    const el = e.target;
+    if (!el || !el.tagName) return;
+    if (isOverlayElement(el)) return;
+    if (el.tagName === 'SELECT') return;
+    // Click пришёл — отменяем mousedown fallback
+    clearTimeout(mousedownTimer);
+    pendingMousedown = null;
     const payload = buildPayload('click', el);
     payload._element = el;
     send(payload);
