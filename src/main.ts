@@ -87,12 +87,8 @@ async function main() {
   console.log(`🎭 AI-Ready PW Codegen`);
   console.log(`   URL: ${validatedUrl}`);
   console.log(`   Output: ${outputDir}`);
-  console.log(`   Screenshots: ${options.screenshots ? 'on' : 'off'}`);
-  console.log(`   Console capture: ${options.captureConsole ? 'on' : 'off'}`);
-  if (maxActions) console.log(`   Max actions: ${maxActions}`);
-  if (headless) console.log(`   Mode: headless`);
   console.log('');
-  console.log('Interact with the page. Close the browser to stop recording.');
+  console.log('Recording... Close the browser to stop.');
 
   const browser = await chromium.launch({ headless });
   const context = await browser.newContext({

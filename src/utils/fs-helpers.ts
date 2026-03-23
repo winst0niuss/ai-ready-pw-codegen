@@ -11,7 +11,7 @@ export async function writeScreenshot(filePath: string, buffer: Buffer): Promise
 
 export async function generateOutputDir(baseDir: string): Promise<string> {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const dirName = `recording-${timestamp}`;
+  const dirName = `test-${timestamp}`;
   const fullPath = path.join(baseDir, dirName);
   await ensureDir(path.join(fullPath, 'screenshots'));
   return fullPath;

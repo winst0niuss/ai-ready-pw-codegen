@@ -130,25 +130,20 @@ export class Recorder {
     // Захват снапшотов
     let accessibilityTree: unknown = null;
     let cleanedDom = '';
-    const captured: string[] = [];
-    const failed: string[] = [];
+    let hasFailed = false;
 
     try {
       accessibilityTree = await captureAccessibilityTree(page);
-      captured.push('a11y');
-    } catch (err) {
+    } catch {
       accessibilityTree = { error: 'failed to capture' };
-      failed.push('a11y');
-      console.warn(`  ⚠ [${paddedIndex}] accessibility capture failed: ${(err as Error).message}`);
+      hasFailed = true;
     }
 
     try {
       cleanedDom = await page.evaluate(getDomCleanerScript());
-      captured.push('dom');
-    } catch (err) {
+    } catch {
       cleanedDom = '<error>failed to capture DOM</error>';
-      failed.push('dom');
-      console.warn(`  ⚠ [${paddedIndex}] DOM capture failed: ${(err as Error).message}`);
+      hasFailed = true;
     }
 
     // Скриншот
@@ -159,10 +154,8 @@ export class Recorder {
         const buffer = await page.screenshot({ fullPage: false });
         await writeScreenshot(screenshotPath, buffer);
         screenshotFile = `screenshots/${paddedIndex}-${actionName}.png`;
-        captured.push('screenshot');
-      } catch (err) {
-        failed.push('screenshot');
-        console.warn(`  ⚠ [${paddedIndex}] screenshot failed: ${(err as Error).message}`);
+      } catch {
+        hasFailed = true;
       }
     }
 
@@ -200,16 +193,13 @@ export class Recorder {
     this.actionsLines[lineIdx] = JSON.stringify(action);
     this.snapshotsLines[lineIdx] = JSON.stringify(snapshot);
 
-    // Прогресс в консоли
-    const maxLabel = this.options.maxActions ? `/${this.options.maxActions}` : '';
-    const capturedLabel = captured.join('+');
-    const failedLabel = failed.length > 0 ? `, ${failed.join('+')} ✗` : '';
-    const updateLabel = isUpdate ? ' (updated)' : '';
-    console.log(`  [${paddedIndex}${maxLabel}] ${actionName}${selector ? ' → ' + selector : ''} ✓ (${capturedLabel}${failedLabel})${updateLabel}`);
+    // Минимальный прогресс: цветная точка
+    const dot = hasFailed ? '\x1b[33m●\x1b[0m' : '\x1b[32m●\x1b[0m';
+    process.stdout.write(dot);
 
     // Остановка по max-actions
     if (this.options.maxActions && this.actionIndex >= this.options.maxActions) {
-      console.log(`\nMax actions (${this.options.maxActions}) reached, stopping...`);
+      process.stdout.write('\n');
       this.onMaxActionsReached?.();
     }
   }
@@ -237,7 +227,8 @@ export class Recorder {
       viewportSize: this.options.viewport,
     };
 
-    console.log(`\nRecorded ${this.actionIndex} actions`);
+    process.stdout.write('\n');
+    console.log(`Recorded ${this.actionIndex} actions`);
     return metadata;
   }
 }
