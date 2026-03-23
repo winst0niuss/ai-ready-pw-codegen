@@ -11,19 +11,26 @@ const DEFAULT_VIEWPORT_WIDTH = 1280;
 const DEFAULT_VIEWPORT_HEIGHT = 720;
 const FINALIZE_TIMEOUT_MS = 10000;
 
-function parseAndValidateUrl(raw: string): string {
-  let urlStr = raw;
-  // Добавляем протокол если отсутствует
-  if (!/^https?:\/\//i.test(urlStr)) {
-    urlStr = `https://${urlStr}`;
+function parseAndValidateUrl(raw: string): { url: string; needsProtocolFallback: boolean } {
+  // Если протокол указан явно — используем как есть
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      new URL(raw);
+    } catch {
+      console.error(`Invalid URL: ${raw}`);
+      process.exit(1);
+    }
+    return { url: raw, needsProtocolFallback: false };
   }
+
+  // Без протокола — валидируем формат, а протокол подберём при подключении
   try {
-    new URL(urlStr);
+    new URL(`http://${raw}`);
   } catch {
     console.error(`Invalid URL: ${raw}`);
     process.exit(1);
   }
-  return urlStr;
+  return { url: raw, needsProtocolFallback: true };
 }
 
 function parseViewport(raw: string | undefined, defaultVal: number, name: string): number {
@@ -72,7 +79,7 @@ async function main() {
     process.exit(1);
   }
 
-  const validatedUrl = parseAndValidateUrl(url);
+  const { url: validatedUrl, needsProtocolFallback } = parseAndValidateUrl(url);
   const outputDir = await generateOutputDir(path.resolve(outputBase));
   const options: RecorderOptions = {
     outputDir,
@@ -96,7 +103,7 @@ async function main() {
   });
   const page = await context.newPage();
 
-  const recorder = new Recorder(context, page, validatedUrl, options);
+  const recorder = new Recorder(context, page, validatedUrl, options, needsProtocolFallback);
 
   // Shutdown handler
   let finalized = false;

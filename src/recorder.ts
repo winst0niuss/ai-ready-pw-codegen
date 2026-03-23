@@ -27,14 +27,16 @@ export class Recorder {
   private pendingConsoleLogs: ConsoleLogEntry[] = [];
   // Колбэк для остановки по max-actions
   private onMaxActionsReached?: () => void;
+  private needsProtocolFallback: boolean;
 
-  constructor(context: BrowserContext, page: Page, startUrl: string, options: RecorderOptions) {
+  constructor(context: BrowserContext, page: Page, startUrl: string, options: RecorderOptions, needsProtocolFallback = false) {
     this.context = context;
     this.page = page;
     this.outputDir = options.outputDir;
     this.options = options;
     this.startedAt = new Date().toISOString();
     this.startUrl = startUrl;
+    this.needsProtocolFallback = needsProtocolFallback;
   }
 
   async start(): Promise<void> {
@@ -75,7 +77,18 @@ export class Recorder {
       }
     );
 
-    await this.page.goto(this.startUrl, { waitUntil: 'domcontentloaded' });
+    // Определяем протокол: если не указан — пробуем http, затем https
+    if (this.needsProtocolFallback) {
+      try {
+        await this.page.goto(`http://${this.startUrl}`, { waitUntil: 'domcontentloaded' });
+        this.startUrl = `http://${this.startUrl}`;
+      } catch {
+        await this.page.goto(`https://${this.startUrl}`, { waitUntil: 'domcontentloaded' });
+        this.startUrl = `https://${this.startUrl}`;
+      }
+    } else {
+      await this.page.goto(this.startUrl, { waitUntil: 'domcontentloaded' });
+    }
   }
 
   /** Регистрирует колбэк для остановки по max-actions */
