@@ -1,10 +1,8 @@
 # AI-Ready PW Codegen
 
 [![npm version](https://img.shields.io/npm/v/ai-ready-pw-codegen)](https://www.npmjs.com/package/ai-ready-pw-codegen)
-[![license](https://img.shields.io/npm/l/ai-ready-pw-codegen)](https://github.com/winst0niuss/ai-ready-pw-codegen/blob/main/LICENSE)
-[![node](https://img.shields.io/node/v/ai-ready-pw-codegen)](https://nodejs.org/)
 [![playwright](https://img.shields.io/badge/playwright-1.58.2-45ba4b)](https://playwright.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![license](https://img.shields.io/npm/l/ai-ready-pw-codegen)](https://github.com/winst0niuss/ai-ready-pw-codegen/blob/main/LICENSE)
 
 Offline Playwright recorder that captures user interactions with DOM snapshots, accessibility trees, and screenshots — then packages everything into an archive for AI-powered test generation.
 
