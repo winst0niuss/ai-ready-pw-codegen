@@ -90,7 +90,9 @@ export class Recorder {
     }
 
     const selector = data.action.selector || '';
-    console.log(`[${paddedIndex}] ${actionName}${selector ? ' → ' + selector : ''} (${url})`);
+    if (!isUpdate) {
+      console.log(`[${paddedIndex}] ${actionName}${selector ? ' → ' + selector : ''}`);
+    }
 
     // Wait for DOM stabilization
     try {

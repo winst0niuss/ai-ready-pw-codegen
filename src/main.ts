@@ -36,12 +36,12 @@ async function main() {
     viewport: { width: viewportWidth, height: viewportHeight },
   };
 
-  console.log(`Recording: ${url}`);
-  console.log(`Output: ${outputDir}`);
-  console.log(`Screenshots: ${options.screenshots ? 'on' : 'off'}`);
+  console.log(`🎭 AI-Ready PW Codegen`);
+  console.log(`   URL: ${url}`);
+  console.log(`   Output: ${outputDir}`);
+  console.log(`   Screenshots: ${options.screenshots ? 'on' : 'off'}`);
   console.log('');
   console.log('Interact with the page. Close the browser to stop recording.');
-  console.log('---');
 
   const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext({
@@ -67,8 +67,8 @@ async function main() {
       const metadata = await recorder.finalize();
       writeAnalysisPrompt(outputDir, metadata);
       const archivePath = createArchive(outputDir);
-      console.log(`\nArchive: ${archivePath}`);
-      console.log('Done! Send the archive to Claude Code for analysis.');
+      console.log(`Archive: ${archivePath}`);
+      console.log('✅ Done! Send the archive to AI for analysis.');
     } catch (err) {
       console.error('Finalization error:', err);
     }
