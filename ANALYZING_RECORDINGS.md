@@ -1,13 +1,13 @@
-# Instructions for Analyzing AI-Ready PW Codegen Recordings
+# Analyzing AI-Ready PW Codegen Recordings
 
-You are analyzing a recording archive produced by **AI-Ready PW Codegen** — an offline Playwright recorder that uses Playwright's built-in codegen for action capture. Your goal is to generate production-quality Playwright test code from the captured user session.
+You are analyzing a recording from **AI-Ready PW Codegen** — an offline Playwright recorder. Your goal is to generate production-quality Playwright test code from the captured session.
 
-> **Note:** A copy of the analysis instructions (`ANALYSIS_PROMPT.md`) is included in every archive with session-specific metadata.
+> A copy of analysis instructions (`ANALYSIS_PROMPT.md`) with session metadata is included in every archive.
 
 ## Archive Structure
 
 ```
-recording-YYYY-MM-DDTHH-mm-ss/
+test-YYYY-MM-DDTHH-mm-ss/
 ├── ANALYSIS_PROMPT.md      ← start here (metadata + instructions)
 ├── actions.jsonl           ← all actions, one JSON per line
 ├── snapshots.jsonl         ← cleaned DOM snapshots (read on demand)
@@ -16,70 +16,59 @@ recording-YYYY-MM-DDTHH-mm-ss/
     └── ...
 ```
 
-## How to Read actions.jsonl
+## actions.jsonl
 
-Each line is a JSON object representing one user action with page context:
+Each line is a JSON object — one user action with full page context:
 
 | Field | Description |
 |-------|-------------|
 | `index` | Sequential action number |
 | `timestamp` | ISO 8601 timestamp |
-| `url` | Page URL at the time of action |
-| `action.type` | One of: `navigate`, `click`, `fill`, `press`, `select`, `check`, `uncheck`, `hover`, `assertVisible` |
-| `action.selector` | Playwright selector (codegen internal format) |
-| `action.value` | Entered text (for `fill` and `select`) |
-| `action.key` | Key name (for `press`: Enter, Tab, Escape, etc.) |
+| `url` | Page URL at action time |
+| `action.type` | `navigate`, `click`, `fill`, `press`, `select`, `check`, `uncheck`, `hover`, `assertVisible` |
+| `action.selector` | Playwright selector (codegen format) |
+| `action.value` | Entered text (`fill`, `select`) |
+| `action.key` | Key name (`press`: Enter, Tab, Escape, etc.) |
 | `action.codegenCode` | Generated Playwright test code snippet |
-| `accessibilityTree` | Full page accessibility tree at the moment of action |
+| `action.position` | Click coordinates `{ x, y }` |
+| `action.modifiers` | Keyboard modifiers (Shift, Ctrl, etc.) |
+| `action.button` | Mouse button (left/right/middle) |
+| `action.clickCount` | Single/double/triple click |
+| `accessibilityTree` | Full page accessibility tree at action time |
 | `screenshotFile` | Relative path to screenshot (or `null`) |
+| `consoleLogs` | Browser console messages since previous action (optional) |
 
-## How to Read snapshots.jsonl
+## snapshots.jsonl
 
 Each line: `{"index": N, "cleanedDom": "<body>...</body>"}`
 
-DOM snapshots are large. Only read when:
+DOM is cleaned: scripts/styles removed, only test-relevant attributes kept (`id`, `class`, `data-testid`, `aria-*`, `role`, `href`, etc.), max depth 30, text truncated at 200 chars.
+
+Read only when:
 - Accessibility tree doesn't have enough info about element structure
-- You need to understand DOM hierarchy around an element
-- Looking for `data-testid` or other test attributes not in the accessibility tree
+- You need DOM hierarchy around an element
+- Looking for `data-testid` or other test attributes
 
 ## Selector Strategy
 
-Choose selectors in this priority order:
+Priority order:
 
-1. **`data-testid` / `data-test` / `data-cy`** — always prefer:
-   ```ts
-   page.getByTestId('submit-btn')
-   ```
+1. **`data-testid`** — always prefer: `page.getByTestId('submit-btn')`
+2. **Role + name** — from accessibility tree: `page.getByRole('button', { name: 'Submit' })`
+3. **Semantic locators** — `page.getByLabel('Email')`, `page.getByPlaceholder('...')`, `page.getByText('...')`
+4. **CSS selector** — last resort: `page.locator('[aria-label="Close"]')`
 
-2. **Accessible role + name** — from the accessibility tree:
-   ```ts
-   page.getByRole('button', { name: 'Submit' })
-   page.getByRole('textbox', { name: 'Email' })
-   ```
+### Cross-Reference
 
-3. **Semantic locators**:
-   ```ts
-   page.getByLabel('Email address')
-   page.getByPlaceholder('Enter your email')
-   page.getByText('Welcome back')
-   ```
-
-4. **CSS selector** — last resort:
-   ```ts
-   page.locator('[aria-label="Close"]')
-   ```
-
-### How to Cross-Reference
-
-- Check `accessibilityTree` for semantic role and accessible name
-- Check `snapshots.jsonl` (matching by `index`) for DOM hierarchy and test attributes
-- Use screenshots to verify visual context
-- Use `action.codegenCode` as a starting point — it has working Playwright code
+- `accessibilityTree` → semantic role and accessible name
+- `snapshots.jsonl` (by `index`) → DOM hierarchy and test attributes
+- `screenshots/` → visual context
+- `action.codegenCode` → working Playwright code as starting point
 
 ## Action Mapping
 
-| Recording Action | Playwright Code |
-|-----------------|----------------|
+| Recording | Playwright Code |
+|-----------|----------------|
 | `navigate` | `await page.goto('url')` |
 | `click` | `await page.getByRole('button', { name: '...' }).click()` |
 | `fill` | `await page.getByRole('textbox', { name: '...' }).fill('value')` |
@@ -90,7 +79,7 @@ Choose selectors in this priority order:
 | `hover` | `await page.getByRole('link', { name: '...' }).hover()` |
 | `assertVisible` | `await expect(page.locator('...')).toBeVisible()` |
 
-## Code Structure
+## Code Template
 
 ```ts
 import { test, expect } from '@playwright/test';
@@ -115,17 +104,10 @@ test.describe('User flow: [describe based on actions]', () => {
 
 ### Guidelines
 
-- Use `@playwright/test` framework with `test.describe` and `test.step`
+- Use `@playwright/test` with `test.describe` and `test.step`
 - Convert codegen selectors to stable ones (data-testid, role-based)
 - Add assertions after navigations: `await expect(page).toHaveURL(...)`
 - Skip redundant SPA navigations that are side effects of clicks
 - Merge consecutive `fill` + `press(Enter)` into logical steps
-- Prefer `toBeVisible()` over `toHaveCount(1)` for existence checks
-
-## Viewport
-
-Check `ANALYSIS_PROMPT.md` for viewport size. If it differs from default, add:
-
-```ts
-test.use({ viewport: { width: 1280, height: 720 } });
-```
+- Check `consoleLogs` for errors that might indicate test-relevant failures
+- Check `ANALYSIS_PROMPT.md` for viewport size — add `test.use({ viewport: {...} })` if non-default

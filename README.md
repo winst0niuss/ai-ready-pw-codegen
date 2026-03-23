@@ -4,79 +4,68 @@
 [![playwright](https://img.shields.io/badge/playwright-1.58.2-45ba4b)](https://playwright.dev/)
 [![license](https://img.shields.io/npm/l/ai-ready-pw-codegen)](https://github.com/winst0niuss/ai-ready-pw-codegen/blob/main/LICENSE)
 
-Offline Playwright recorder that captures user interactions with DOM snapshots, accessibility trees, and screenshots — then packages everything into an archive for AI-powered test generation.
+Offline Playwright recorder. Captures each user action with accessibility tree, cleaned DOM, screenshot, and console logs — packages everything into an archive for AI-powered test generation.
 
 > Record on any machine. Generate tests with AI later.
 
-## Why AI-Ready PW Codegen?
-
-- **Offline-first** — no AI connection needed during recording
-- **Rich context** — each action captures accessibility tree, cleaned DOM, and screenshot
-- **AI-ready output** — JSONL archive with built-in analysis prompt for LLMs
-- **Playwright codegen** — uses built-in Playwright recorder UI for reliable action capture
-- **Compact archives** — DOM snapshots separated from actions to save AI context window
-
-## Installation
-
-### Prerequisites
-
-- Node.js >= 18
-- npm
-
-### Install from npm
+## Quick Start
 
 ```bash
 npm install -g ai-ready-pw-codegen
+ai-ready-pw-codegen https://your-app.com
 ```
 
-This installs the `ai-ready-pw-codegen` command globally. On first run, Playwright will download Chromium automatically.
+A Chromium browser opens with Playwright's recorder UI. Interact with the page. Close the browser — the recording is archived automatically.
 
-### Run
+```
+🎭 AI-Ready PW Codegen
+   URL: https://your-app.com
+   Output: ./recordings/test-2026-03-23T15-08-06
 
-```bash
-ai-ready-pw-codegen https://example.com
+Recording... Close the browser to stop.
+●●●●●●●●●●
+Recorded 10 actions
+Archive: ./recordings/test-2026-03-23T15-08-06.tar.gz
+✅ Done! Send the archive to AI for analysis.
 ```
 
-A headed Chromium browser opens with the Playwright recorder UI. Interact with the page — each action is captured with accessibility tree, cleaned DOM, and screenshot. Close the browser when done — the recording is saved and archived automatically.
+## Why?
 
-### CLI Options
+**Problem:** AI tools (Claude Code, Cursor, Gemini CLI) can generate tests, but they need page context — DOM structure, accessibility tree, selectors. Getting this context manually is tedious.
+
+**Solution:** Record once, capture everything, send to AI. Works offline — no AI connection needed during recording.
+
+What gets captured per action:
+- Accessibility tree (roles, names, states)
+- Cleaned DOM (test-relevant attributes only, max depth 30)
+- Screenshot
+- Console logs (errors, warnings)
+- Full codegen data (selector, position, modifiers, generated code)
+
+## CLI Options
 
 ```
 ai-ready-pw-codegen <URL> [options]
 
-Options:
   --no-screenshots     Disable screenshots
+  --no-archive         Skip .tar.gz creation
+  --no-console         Disable console log capture
+  --headless           Run in headless mode
+  --max-actions <N>    Stop after N actions
   --output-dir <path>  Output directory (default: ./recordings)
   --width <number>     Viewport width (default: 1280)
   --height <number>    Viewport height (default: 720)
 ```
 
-### Example
+URL protocol is auto-detected: tries `http://` first, falls back to `https://`. Explicit protocol (`http://...` or `https://...`) is used as-is.
 
-```bash
-ai-ready-pw-codegen https://demo.playwright.dev/todomvc --output-dir ./my-recording
-```
-
-### Run without installing (npx)
-
-```bash
-npx ai-ready-pw-codegen https://example.com
-```
-
-## How It Works
-
-1. Launches headed Chromium with Playwright's built-in codegen recorder UI
-2. Hooks into codegen events (`actionAdded`/`actionUpdated`) for programmatic access
-3. On each user action: captures accessibility tree + cleaned DOM + screenshot
-4. On browser close: writes JSONL files, generates `ANALYSIS_PROMPT.md`, archives into `.tar.gz`
-
-## Output Format
+## Output
 
 ```
-recordings/recording-YYYY-MM-DDTHH-mm-ss/
-├── ANALYSIS_PROMPT.md      # AI instructions + session metadata (start here)
-├── actions.jsonl           # All actions, one JSON per line (primary data)
-├── snapshots.jsonl         # Cleaned DOM snapshots, one per line (on demand)
+recordings/test-YYYY-MM-DDTHH-mm-ss/
+├── ANALYSIS_PROMPT.md   # AI reads this first — session metadata + instructions
+├── actions.jsonl        # One action per line — primary data
+├── snapshots.jsonl      # Cleaned DOM per action — read on demand
 └── screenshots/
     ├── 001-navigate.png
     └── 002-click.png
@@ -84,25 +73,29 @@ recordings/recording-YYYY-MM-DDTHH-mm-ss/
 
 ### actions.jsonl
 
-Each line is a JSON object:
-
 ```json
-{"index":1,"timestamp":"...","url":"...","action":{"type":"click","selector":"...","codegenCode":"..."},"accessibilityTree":{...},"screenshotFile":"screenshots/001-click.png"}
+{
+  "index": 2,
+  "timestamp": "2026-03-23T15:08:07.123Z",
+  "url": "https://your-app.com/dashboard",
+  "action": {
+    "type": "click",
+    "selector": "[data-testid=\"submit-btn\"]",
+    "codegenCode": "await page.getByTestId('submit-btn').click()",
+    "position": { "x": 150, "y": 320 },
+    "button": "left"
+  },
+  "accessibilityTree": { "role": "WebArea", "children": [...] },
+  "screenshotFile": "screenshots/002-click.png",
+  "consoleLogs": [
+    { "level": "error", "text": "Failed to fetch /api/data", "timestamp": "..." }
+  ]
+}
 ```
-
-Key fields:
-- `action.type` — `navigate`, `click`, `fill`, `press`, `select`, `check`, `uncheck`, `hover`, `assertVisible`
-- `action.selector` — Playwright selector
-- `action.codegenCode` — generated Playwright test code snippet
-- `accessibilityTree` — page accessibility snapshot at action time
 
 ### snapshots.jsonl
 
-Each line: `{"index":1,"cleanedDom":"<body>...</body>"}` — cleaned HTML with non-test attributes stripped, max depth 15. Read only when accessibility tree lacks needed details.
-
-### ANALYSIS_PROMPT.md
-
-Included in every archive. Contains session metadata and instructions for AI to analyze the recording. When sending an archive to Claude Code, Gemini CLI, or Cursor — the AI reads this file first and knows how to process the rest.
+DOM snapshots are large — separated from actions to save AI context window. Each line: `{"index": 2, "cleanedDom": "<body>...</body>"}`. Read only when accessibility tree lacks details about DOM hierarchy or test attributes.
 
 ## Using with AI
 
@@ -110,45 +103,34 @@ Included in every archive. Contains session metadata and instructions for AI to 
 # 1. Record
 ai-ready-pw-codegen https://your-app.com
 
-# 2. Send archive to AI
-# Extract and point Claude Code / Cursor / Gemini CLI to the recording directory
-tar -xzf recordings/recording-*.tar.gz
-# AI reads ANALYSIS_PROMPT.md → actions.jsonl → screenshots → generates tests
+# 2. Extract
+tar -xzf recordings/test-*.tar.gz
+
+# 3. Point AI to the directory
+# Claude Code / Cursor / Gemini CLI reads ANALYSIS_PROMPT.md first,
+# then actions.jsonl → screenshots → generates tests
 ```
 
-## Architecture
+See [ANALYZING_RECORDINGS.md](ANALYZING_RECORDINGS.md) for detailed instructions on how AI should process recordings.
 
-Uses Playwright's built-in codegen (`context._enableRecorder()` internal API) for action capture and UI. AI-Ready PW Codegen hooks into codegen events to capture DOM snapshots, accessibility trees, and screenshots on each recorded action.
+## How It Works
 
-**Dual `_enableRecorder` call**: First call opens the GUI inspector, second call (with `recorderMode: 'api'`) attaches the eventSink for programmatic access.
+1. Launches headed Chromium with Playwright's built-in codegen recorder UI
+2. Hooks into codegen events (`actionAdded`/`actionUpdated`) via internal `_enableRecorder` API
+3. On each action: captures accessibility tree + cleaned DOM + screenshot + console logs
+4. On browser close: writes JSONL files, generates `ANALYSIS_PROMPT.md`, archives into `.tar.gz`
 
-**Important**: Uses Playwright internal API (underscore-prefixed). Playwright version is pinned to 1.58.2 to prevent breakage.
-
-### Key Files
-
-| File | Purpose |
-|------|---------|
-| `src/main.ts` | CLI entry point, launches Chromium, handles shutdown + archiving |
-| `src/recorder.ts` | Core: enables codegen, captures snapshots, writes JSONL |
-| `src/types.ts` | Shared interfaces (`RecordedAction`, `DomSnapshot`, `SessionMetadata`) |
-| `src/snapshot/dom-cleaner.ts` | DOM cleaning via `page.evaluate()` (strips non-test attrs, max depth 15) |
-| `src/snapshot/accessibility.ts` | `page.accessibility.snapshot()` with `ariaSnapshot()` fallback |
-| `src/utils/analysis-prompt.ts` | Generates `ANALYSIS_PROMPT.md` with session metadata |
-| `src/utils/archiver.ts` | Creates `.tar.gz` archive |
+Uses Playwright internal API (underscore-prefixed). Playwright version pinned to 1.58.2.
 
 ## Development
-
-```bash
-npm run build          # Build to dist/
-npx tsc --noEmit       # Type check
-```
-
-## Contributing
 
 ```bash
 git clone https://github.com/winst0niuss/ai-ready-pw-codegen.git
 cd ai-ready-pw-codegen
 npm install
+npm run build          # Build to dist/
+npx tsc --noEmit       # Type check
+npx ts-node src/main.ts https://example.com  # Run from source
 ```
 
 ## License
