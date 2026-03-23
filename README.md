@@ -7,10 +7,10 @@ Offline Playwright recorder that captures user interactions with DOM snapshots, 
 ## Why DOMTrace?
 
 - **Offline-first** — no AI connection needed during recording
-- **Rich context** — each action captures cleaned DOM, accessibility tree, and screenshot
-- **AI-ready output** — structured JSON archive designed for LLM analysis
-- **SPA-aware** — intercepts `pushState`/`replaceState` for single-page apps
-- **WaitFor mode** — manually mark elements to assert visibility/presence
+- **Rich context** — each action captures accessibility tree, cleaned DOM, and screenshot
+- **AI-ready output** — JSONL archive with built-in analysis prompt for LLMs
+- **Playwright codegen** — uses built-in Playwright recorder UI for reliable action capture
+- **Compact archives** — DOM snapshots separated from actions to save AI context window
 
 ## Quick Start
 
@@ -46,105 +46,76 @@ npx ts-node src/main.ts https://demo.playwright.dev/todomvc --output-dir ./my-re
 
 ## How It Works
 
-1. Launches headed Chromium via Playwright
-2. Injects event listeners that capture clicks, input, select, keypress, submit, and navigation
+1. Launches headed Chromium with Playwright's built-in codegen recorder UI
+2. Hooks into codegen events (`actionAdded`/`actionUpdated`) for programmatic access
 3. On each user action: captures accessibility tree + cleaned DOM + screenshot
-4. Saves structured JSON per action to disk
-5. On browser close: archives everything into a `.tar.gz`
-
-### Recording UI
-
-- **Toolbar** (top of page) — shows recording indicator, switch between **Record** and **WaitFor** modes
-- **Action Log** (separate window) — live feed of captured actions with type badges
-
-### WaitFor Mode
-
-Switch to WaitFor mode via the toolbar to mark elements for assertion. Click any element on the page, then choose a condition:
-
-- `visible` — element should be visible
-- `hidden` — element should be hidden
-- `attached` — element should exist in DOM
-- `detached` — element should not exist in DOM
-
-Press `Escape` to exit WaitFor mode.
+4. On browser close: writes JSONL files, generates `ANALYSIS_PROMPT.md`, archives into `.tar.gz`
 
 ## Output Format
 
 ```
 recordings/recording-YYYY-MM-DDTHH-mm-ss/
-├── metadata.json           # Session info: startUrl, timestamps, viewport
-├── actions/
-│   ├── 001-navigate.json   # One file per action
-│   ├── 002-click.json
-│   └── ...
+├── ANALYSIS_PROMPT.md      # AI instructions + session metadata (start here)
+├── actions.jsonl           # All actions, one JSON per line (primary data)
+├── snapshots.jsonl         # Cleaned DOM snapshots, one per line (on demand)
 └── screenshots/
-    ├── 001-navigate.png    # Screenshot after each action
-    └── ...
+    ├── 001-navigate.png
+    └── 002-click.png
 ```
 
-### Action JSON Structure
+### actions.jsonl
+
+Each line is a JSON object:
 
 ```json
-{
-  "index": 2,
-  "timestamp": "2025-01-15T10:30:00.000Z",
-  "url": "https://example.com/page",
-  "action": {
-    "type": "click",
-    "elementInfo": {
-      "tagName": "button",
-      "id": "submit-btn",
-      "classes": ["btn", "btn-primary"],
-      "text": "Submit",
-      "attributes": { "data-testid": "submit", "role": "button" },
-      "cssSelector": "[data-testid=\"submit\"]",
-      "xpath": "//*[@id=\"submit-btn\"]",
-      "boundingBox": { "x": 100, "y": 200, "width": 80, "height": 36 }
-    }
-  },
-  "snapshot": {
-    "accessibilityTree": { "role": "WebArea", "children": [...] },
-    "cleanedDom": "<body>...</body>"
-  },
-  "screenshotFile": "screenshots/002-click.png"
-}
+{"index":1,"timestamp":"...","url":"...","action":{"type":"click","selector":"...","codegenCode":"..."},"accessibilityTree":{...},"screenshotFile":"screenshots/001-click.png"}
 ```
 
-### Action Types
+Key fields:
+- `action.type` — `navigate`, `click`, `fill`, `press`, `select`, `check`, `uncheck`, `hover`, `assertVisible`
+- `action.selector` — Playwright selector
+- `action.codegenCode` — generated Playwright test code snippet
+- `accessibilityTree` — page accessibility snapshot at action time
 
-| Type | Description | Extra Fields |
-|------|-------------|-------------|
-| `navigate` | Page navigation | — |
-| `click` | Element click | `elementInfo` |
-| `fill` | Text input | `value`, `elementInfo` |
-| `select` | Dropdown selection | `value`, `elementInfo` |
-| `keypress` | Key press (Enter/Tab/Escape) | `key`, `elementInfo` |
-| `submit` | Form submission | `elementInfo` |
-| `waitFor` | Manual assertion marker | `condition`, `elementInfo` |
+### snapshots.jsonl
 
-## Generating Tests from Recordings
+Each line: `{"index":1,"cleanedDom":"<body>...</body>"}` — cleaned HTML with non-test attributes stripped, max depth 15. Read only when accessibility tree lacks needed details.
 
-See **[ANALYZING_RECORDINGS.md](./ANALYZING_RECORDINGS.md)** — an instruction document you can send alongside the archive to Claude or another LLM for automated test generation.
+### ANALYSIS_PROMPT.md
+
+Included in every archive. Contains session metadata and instructions for AI to analyze the recording. When sending an archive to Claude Code, Gemini CLI, or Cursor — the AI reads this file first and knows how to process the rest.
+
+## Using with AI
+
+```bash
+# 1. Record
+npx ts-node src/main.ts https://your-app.com
+
+# 2. Send archive to AI
+# Extract and point Claude Code / Cursor / Gemini CLI to the recording directory
+tar -xzf recordings/recording-*.tar.gz
+# AI reads ANALYSIS_PROMPT.md → actions.jsonl → screenshots → generates tests
+```
 
 ## Architecture
 
-Two-layer system:
+Uses Playwright's built-in codegen (`context._enableRecorder()` internal API) for action capture and UI. DOMTrace hooks into codegen events to capture DOM snapshots, accessibility trees, and screenshots on each recorded action.
 
-- **Node.js layer** (Playwright) — manages the browser, captures accessibility trees and DOM snapshots, saves data to disk
-- **Browser layer** (injected scripts) — captures user events, generates selectors, communicates via `console.debug` protocol
+**Dual `_enableRecorder` call**: First call opens the GUI inspector, second call (with `recorderMode: 'api'`) attaches the eventSink for programmatic access.
+
+**Important**: Uses Playwright internal API (underscore-prefixed). Playwright version is pinned to 1.58.2 to prevent breakage.
 
 ### Key Files
 
 | File | Purpose |
 |------|---------|
 | `src/main.ts` | CLI entry point, launches Chromium, handles shutdown + archiving |
-| `src/recorder.ts` | Core class: script injection, console message listener, snapshot capture, action queue |
-| `src/types.ts` | Shared TypeScript interfaces |
-| `src/injected/listener.ts` | Browser-side event capture (IIFE injected via `addInitScript`) |
-| `src/injected/toolbar.ts` | In-page toolbar with Record/WaitFor mode switching |
-| `src/overlay-window.ts` | Separate action log window |
-| `src/snapshot/dom-cleaner.ts` | DOM cleaning (strips non-test attributes, truncates deep trees) |
-| `src/snapshot/accessibility.ts` | Accessibility tree capture with aria snapshot fallback |
+| `src/recorder.ts` | Core: enables codegen, captures snapshots, writes JSONL |
+| `src/types.ts` | Shared interfaces (`RecordedAction`, `DomSnapshot`, `SessionMetadata`) |
+| `src/snapshot/dom-cleaner.ts` | DOM cleaning via `page.evaluate()` (strips non-test attrs, max depth 15) |
+| `src/snapshot/accessibility.ts` | `page.accessibility.snapshot()` with `ariaSnapshot()` fallback |
+| `src/utils/analysis-prompt.ts` | Generates `ANALYSIS_PROMPT.md` with session metadata |
+| `src/utils/archiver.ts` | Creates `.tar.gz` archive |
 
 ## Development
 

@@ -33,7 +33,8 @@ Playwright Codegen (built-in recorder)
   → eventSink.actionUpdated(page, data, code)
     → recorder.ts enqueueAction → processAction (sequential Promise queue)
       → capture accessibility tree + cleaned DOM + screenshot
-      → write JSON to disk
+      → store in memory arrays (for actionUpdated overwrite support)
+      → on finalize: write actions.jsonl + snapshots.jsonl to disk
 ```
 
 **Dual `_enableRecorder` call**: First call opens the GUI inspector, second call (with `recorderMode: 'api'`) attaches the eventSink for programmatic access. Both coexist on the same context.
@@ -43,8 +44,8 @@ Playwright Codegen (built-in recorder)
 ### Key Files
 
 - **`src/main.ts`** — CLI entry point, launches Chromium (headed), handles shutdown + archiving
-- **`src/recorder.ts`** — Core class: enables codegen via `_enableRecorder`, listens for `actionAdded`/`actionUpdated` events, captures snapshots, writes action JSONs. Uses Promise queue for sequential processing. Handles `actionUpdated` by overwriting the last action (codegen merges keystrokes into fill)
-- **`src/types.ts`** — All shared interfaces (`RecordedAction`, `CodegenActionData`, `SessionMetadata`)
+- **`src/recorder.ts`** — Core class: enables codegen via `_enableRecorder`, listens for `actionAdded`/`actionUpdated` events, captures snapshots. Stores actions in memory arrays, writes `actions.jsonl` + `snapshots.jsonl` on finalize. Handles `actionUpdated` by overwriting last array entry (codegen merges keystrokes into fill). Returns metadata for `ANALYSIS_PROMPT.md`
+- **`src/types.ts`** — All shared interfaces (`RecordedAction`, `DomSnapshot`, `CodegenActionData`, `SessionMetadata`)
 - **`src/snapshot/dom-cleaner.ts`** — Runs in browser via `page.evaluate()`: clones full page DOM from body, strips non-test attributes, max depth 15
 - **`src/snapshot/accessibility.ts`** — `page.accessibility.snapshot()` with fallback to `ariaSnapshot()`
 
