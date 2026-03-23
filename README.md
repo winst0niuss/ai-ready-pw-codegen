@@ -1,7 +1,5 @@
 # DOMTrace Playwright
 
-[![GitHub](https://img.shields.io/github/license/winst0niuss/domtrace-playwright)](https://github.com/winst0niuss/domtrace-playwright)
-
 Offline Playwright recorder that captures user interactions with DOM snapshots, accessibility trees, and screenshots — then packages everything into an archive for AI-powered test generation.
 
 > Record on any machine. Generate tests with AI later.
