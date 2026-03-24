@@ -61,7 +61,7 @@ Playwright Codegen (built-in recorder)
 - **`src/snapshot/dom-cleaner.ts`** — Runs in browser via `page.evaluate()`: clones full page DOM from body, strips non-test attributes, max depth 30, max text 200 chars
 - **`src/snapshot/accessibility.ts`** — `page.accessibility.snapshot()` with fallback to `ariaSnapshot()`
 - **`src/utils/archiver.ts`** — Creates `.tar.gz` archive via `spawnSync('tar', [...])` (no shell interpolation)
-- **`src/utils/analysis-prompt.ts`** — Generates `ANALYSIS_PROMPT.md` with session metadata + AI instructions
+- **`src/utils/analysis-prompt.ts`** — Generates `SESSION.md` with session metadata
 - **`src/utils/fs-helpers.ts`** — Async `ensureDir`, `writeScreenshot`, `generateOutputDir`
 
 ### Key Patterns
@@ -77,7 +77,9 @@ Playwright Codegen (built-in recorder)
 
 ```
 recordings/test-YYYY-MM-DDTHH-mm-ss/
-├── ANALYSIS_PROMPT.md      # AI instructions + session metadata inline
+├── SESSION.md              # session metadata (entry point)
+├── DATA_FORMAT.md          # data format reference (from docs/)
+├── TEST_GUIDE.md           # test generation guidelines (from docs/)
 ├── actions.jsonl           # all actions, one JSON per line (primary file)
 ├── snapshots.jsonl         # cleaned DOM snapshots, one per line (on demand)
 └── screenshots/

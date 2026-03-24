@@ -2,7 +2,7 @@
 import { chromium } from 'playwright';
 import path from 'path';
 import { Recorder } from './recorder';
-import { generateOutputDir } from './utils/fs-helpers';
+import { generateOutputDir, copyDocsToOutput } from './utils/fs-helpers';
 import { createArchive } from './utils/archiver';
 import { writeAnalysisPrompt } from './utils/analysis-prompt';
 import { RecorderOptions } from './types';
@@ -119,6 +119,7 @@ async function main() {
     try {
       const metadata = await recorder.finalize();
       writeAnalysisPrompt(outputDir, metadata);
+      copyDocsToOutput(outputDir);
 
       if (!noArchive) {
         const archivePath = createArchive(outputDir);

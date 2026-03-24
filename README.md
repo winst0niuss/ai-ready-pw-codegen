@@ -63,9 +63,11 @@ URL protocol is auto-detected: tries `http://` first, falls back to `https://`. 
 
 ```
 recordings/test-YYYY-MM-DDTHH-mm-ss/
-├── ANALYSIS_PROMPT.md   # AI reads this first — session metadata + instructions
-├── actions.jsonl        # One action per line — primary data
-├── snapshots.jsonl      # Cleaned DOM per action — read on demand
+├── SESSION.md              # AI reads this first — session metadata
+├── DATA_FORMAT.md          # Data format reference
+├── TEST_GUIDE.md           # Test generation guidelines
+├── actions.jsonl           # One action per line — primary data
+├── snapshots.jsonl         # Cleaned DOM per action — read on demand
 └── screenshots/
     ├── 001-navigate.png
     └── 002-click.png
@@ -107,18 +109,18 @@ ai-ready-pw-codegen https://your-app.com
 tar -xzf recordings/test-*.tar.gz
 
 # 3. Point AI to the directory
-# Claude Code / Cursor / Gemini CLI reads ANALYSIS_PROMPT.md first,
+# Claude Code / Cursor / Gemini CLI reads SESSION.md first,
 # then actions.jsonl → screenshots → generates tests
 ```
 
-See [ANALYZING_RECORDINGS.md](ANALYZING_RECORDINGS.md) for detailed instructions on how AI should process recordings.
+See [docs/DATA_FORMAT.md](docs/DATA_FORMAT.md) and [docs/TEST_GUIDE.md](docs/TEST_GUIDE.md) for detailed instructions on how AI should process recordings and generate tests. Both files are automatically included in every archive.
 
 ## How It Works
 
 1. Launches headed Chromium with Playwright's built-in codegen recorder UI
 2. Hooks into codegen events (`actionAdded`/`actionUpdated`) via internal `_enableRecorder` API
 3. On each action: captures accessibility tree + cleaned DOM + screenshot + console logs
-4. On browser close: writes JSONL files, generates `ANALYSIS_PROMPT.md`, archives into `.tar.gz`
+4. On browser close: writes JSONL files, generates `SESSION.md`, archives into `.tar.gz`
 
 Uses Playwright internal API (underscore-prefixed). Playwright version pinned to 1.58.2.
 
