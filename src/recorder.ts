@@ -97,34 +97,50 @@ export class Recorder {
   }
 
   /**
-   * Resolves a frame by the framePath from codegen. Returns page for main-frame actions.
-   * For iframe actions it heuristically picks the matching frame by framePath depth.
+   * Walks framePath (an array of iframe selectors) and returns the target Frame.
+   * Returns page for main-frame actions. On failure — graceful fallback to page.
    */
-  private resolveFrame(
+  private async resolveFrame(
     page: Page,
     data: CodegenActionData,
-  ): { frameContext?: FrameContext; executionContext: Page | Frame } {
+  ): Promise<{ frameContext?: FrameContext; executionContext: Page | Frame }> {
     const framePath = data.frame?.framePath;
     if (!framePath || framePath.length === 0) {
       return { executionContext: page };
     }
 
-    // Heuristic: look for a non-main frame. If several, pick the last (most nested) one.
-    const mainFrame = page.mainFrame();
-    const nonMainFrames = page.frames().filter((f) => f !== mainFrame);
-    const frame = nonMainFrames[nonMainFrames.length - 1];
-
-    if (!frame) {
-      return { executionContext: page };
+    // Honest walk: locator(sel).elementHandle() -> handle.contentFrame() for each level
+    let current: Page | Frame = page;
+    for (const sel of framePath) {
+      try {
+        const handle = await current.locator(sel).first().elementHandle({ timeout: 1000 });
+        if (!handle) {
+          return { executionContext: page };
+        }
+        const child = await handle.contentFrame();
+        await handle.dispose().catch(() => {});
+        if (!child) {
+          return { executionContext: page };
+        }
+        current = child;
+      } catch {
+        return { executionContext: page };
+      }
     }
 
+    const frame = current as Frame;
     let frameUrl = '';
     try {
       frameUrl = frame.url();
     } catch {
       frameUrl = '';
     }
-    const frameName = frame.name() || undefined;
+    let frameName: string | undefined;
+    try {
+      frameName = frame.name() || undefined;
+    } catch {
+      frameName = undefined;
+    }
 
     return {
       frameContext: {
@@ -180,7 +196,7 @@ export class Recorder {
     }
 
     // Resolve frame (if the action happened inside an iframe)
-    const { frameContext, executionContext } = this.resolveFrame(page, data);
+    const { frameContext, executionContext } = await this.resolveFrame(page, data);
 
     // Capture target + selectors (skipped for actions without a selector, e.g. navigate)
     let targetResult: Awaited<ReturnType<typeof captureTargetElement>> | null = null;

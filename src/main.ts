@@ -12,7 +12,7 @@ const DEFAULT_VIEWPORT_HEIGHT = 720;
 const FINALIZE_TIMEOUT_MS = 10000;
 
 function parseAndValidateUrl(raw: string): { url: string; needsProtocolFallback: boolean } {
-  // Если протокол указан явно — используем как есть
+  // Protocol is explicit — use as is
   if (/^https?:\/\//i.test(raw)) {
     try {
       new URL(raw);
@@ -23,7 +23,7 @@ function parseAndValidateUrl(raw: string): { url: string; needsProtocolFallback:
     return { url: raw, needsProtocolFallback: false };
   }
 
-  // Без протокола — валидируем формат, а протокол подберём при подключении
+  // No protocol — validate format; protocol will be picked up on connect
   try {
     new URL(`http://${raw}`);
   } catch {
@@ -134,7 +134,7 @@ async function main() {
     process.exit(0);
   }
 
-  // Остановка по max-actions
+  // Stop on max-actions
   recorder.onStop(() => finalize());
 
   context.on('close', finalize);
