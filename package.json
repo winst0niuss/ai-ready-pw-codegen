@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/winst0niuss/ai-ready-pw-codegen.git"
+    "url": "git+https://github.com/winst0niuss/ai-ready-pw-codegen.git"
   },
   "homepage": "https://github.com/winst0niuss/ai-ready-pw-codegen#readme",
   "bugs": {
