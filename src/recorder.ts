@@ -1,9 +1,10 @@
-import type { Page, BrowserContext, ConsoleMessage } from 'playwright';
+import type { Page, BrowserContext, ConsoleMessage, Frame } from 'playwright';
 import fs from 'fs';
 import path from 'path';
-import { CodegenActionData, ConsoleLogEntry, RecordedAction, SessionMetadata, RecorderOptions } from './types';
+import { CodegenActionData, ConsoleLogEntry, FrameContext, RecordedAction, SessionMetadata, RecorderOptions } from './types';
 import { getDomCleanerScript } from './snapshot/dom-cleaner';
 import { captureAccessibilityTree } from './snapshot/accessibility';
+import { captureTargetElement } from './snapshot/target-element';
 import { writeScreenshot } from './utils/fs-helpers';
 
 const QUEUE_DRAIN_TIMEOUT_MS = 5000;
@@ -95,6 +96,46 @@ export class Recorder {
     this.onMaxActionsReached = callback;
   }
 
+  /**
+   * Resolves a frame by the framePath from codegen. Returns page for main-frame actions.
+   * For iframe actions it heuristically picks the matching frame by framePath depth.
+   */
+  private resolveFrame(
+    page: Page,
+    data: CodegenActionData,
+  ): { frameContext?: FrameContext; executionContext: Page | Frame } {
+    const framePath = data.frame?.framePath;
+    if (!framePath || framePath.length === 0) {
+      return { executionContext: page };
+    }
+
+    // Heuristic: look for a non-main frame. If several, pick the last (most nested) one.
+    const mainFrame = page.mainFrame();
+    const nonMainFrames = page.frames().filter((f) => f !== mainFrame);
+    const frame = nonMainFrames[nonMainFrames.length - 1];
+
+    if (!frame) {
+      return { executionContext: page };
+    }
+
+    let frameUrl = '';
+    try {
+      frameUrl = frame.url();
+    } catch {
+      frameUrl = '';
+    }
+    const frameName = frame.name() || undefined;
+
+    return {
+      frameContext: {
+        path: framePath,
+        url: frameUrl,
+        ...(frameName ? { name: frameName } : {}),
+      },
+      executionContext: frame,
+    };
+  }
+
   private enqueueAction(page: Page, data: CodegenActionData, code: string, isUpdate: boolean): void {
     this.actionQueue = this.actionQueue.then(() =>
       this.processAction(page, data, code, isUpdate)
@@ -138,12 +179,26 @@ export class Recorder {
       // Page may have been closed
     }
 
+    // Resolve frame (if the action happened inside an iframe)
+    const { frameContext, executionContext } = this.resolveFrame(page, data);
+
+    // Capture target + selectors (skipped for actions without a selector, e.g. navigate)
+    let targetResult: Awaited<ReturnType<typeof captureTargetElement>> | null = null;
+    if (selector) {
+      try {
+        targetResult = await captureTargetElement(executionContext, selector);
+      } catch {
+        targetResult = null;
+      }
+    }
+
     // Capture snapshots
     let accessibilityTree: unknown = null;
     let cleanedDom = '';
     let hasFailed = false;
 
     try {
+      // a11y snapshot is taken from page (Playwright Frame has no accessibility API)
       accessibilityTree = await captureAccessibilityTree(page);
     } catch {
       accessibilityTree = { error: 'failed to capture' };
@@ -151,7 +206,8 @@ export class Recorder {
     }
 
     try {
-      cleanedDom = await page.evaluate(getDomCleanerScript());
+      // DOM cleaner runs inside the resolved frame's context
+      cleanedDom = await executionContext.evaluate(getDomCleanerScript());
     } catch {
       cleanedDom = '<error>failed to capture DOM</error>';
       hasFailed = true;
@@ -189,6 +245,8 @@ export class Recorder {
         ...(data.action.button !== undefined && { button: data.action.button }),
         ...(data.action.clickCount !== undefined && { clickCount: data.action.clickCount }),
       },
+      ...(targetResult && { target: targetResult.target, selectors: targetResult.selectors }),
+      ...(frameContext && { frame: frameContext }),
       accessibilityTree,
       screenshotFile,
       ...(consoleLogs && { consoleLogs }),

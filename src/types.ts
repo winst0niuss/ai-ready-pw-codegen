@@ -4,6 +4,68 @@ export interface ConsoleLogEntry {
   timestamp: string;
 }
 
+export interface BoundingBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface TargetElementState {
+  visible: boolean;
+  enabled: boolean;
+  editable?: boolean;
+  checked?: boolean;
+  focused: boolean;
+  readOnly?: boolean;
+}
+
+export interface TargetComputedStyle {
+  display: string;
+  visibility: string;
+  opacity: string;
+  pointerEvents: string;
+}
+
+export interface TargetAncestor {
+  tagName: string;
+  id?: string;
+  classes?: string;
+  role?: string;
+  testId?: string;
+}
+
+export interface TargetSnapshot {
+  missing?: boolean;
+  tagName?: string;
+  role?: string;
+  accessibleName?: string;
+  text?: string;
+  attributes?: Record<string, string>;
+  boundingBox?: BoundingBox | null;
+  inViewport?: boolean;
+  state?: TargetElementState;
+  computedStyle?: TargetComputedStyle;
+  ancestors?: TargetAncestor[];
+}
+
+export interface SelectorCandidates {
+  codegen: string;
+  testId?: string;
+  role?: { role: string; name?: string };
+  label?: string;
+  text?: string;
+  placeholder?: string;
+  css?: string;
+  xpath?: string;
+}
+
+export interface FrameContext {
+  path: string[];
+  url: string;
+  name?: string;
+}
+
 export interface RecordedAction {
   index: number;
   timestamp: string;
@@ -19,6 +81,9 @@ export interface RecordedAction {
     button?: string;
     clickCount?: number;
   };
+  target?: TargetSnapshot;
+  selectors?: SelectorCandidates;
+  frame?: FrameContext;
   accessibilityTree: unknown;
   screenshotFile: string | null;
   consoleLogs?: ConsoleLogEntry[];
