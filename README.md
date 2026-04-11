@@ -36,6 +36,9 @@ Archive: ./recordings/test-2026-03-23T15-08-06.tar.gz
 **Solution:** Record once, capture everything, send to AI. Works offline — no AI connection needed during recording.
 
 What gets captured per action:
+- Target element snapshot (tag, ARIA role, accessible name, state, bounding box, computed style, ancestors)
+- Selector candidates (testId, role+name, label, text, placeholder, CSS, XPath) for robust test generation
+- Frame context for actions inside iframes (framePath, frame URL)
 - Accessibility tree (roles, names, states)
 - Cleaned DOM (test-relevant attributes only, max depth 30)
 - Screenshot
@@ -78,7 +81,7 @@ recordings/test-YYYY-MM-DDTHH-mm-ss/
 ```json
 {
   "index": 2,
-  "timestamp": "2026-03-23T15:08:07.123Z",
+  "timestamp": "2026-04-11T15:08:07.123Z",
   "url": "https://your-app.com/dashboard",
   "action": {
     "type": "click",
@@ -87,13 +90,31 @@ recordings/test-YYYY-MM-DDTHH-mm-ss/
     "position": { "x": 150, "y": 320 },
     "button": "left"
   },
-  "accessibilityTree": { "role": "WebArea", "children": [...] },
+  "target": {
+    "tagName": "BUTTON",
+    "role": "button",
+    "accessibleName": "Submit",
+    "attributes": { "data-testid": "submit-btn", "type": "submit" },
+    "boundingBox": { "x": 140, "y": 310, "width": 80, "height": 32 },
+    "inViewport": true,
+    "state": { "visible": true, "enabled": true, "focused": false }
+  },
+  "selectors": {
+    "codegen": "[data-testid=\"submit-btn\"]",
+    "testId": "submit-btn",
+    "role": { "role": "button", "name": "Submit" },
+    "css": "button#submit-btn"
+  },
+  "frame": { "path": ["iframe#checkout"], "url": "https://pay.example.com/form" },
+  "accessibilityTree": { "role": "WebArea", "children": [] },
   "screenshotFile": "screenshots/002-click.png",
   "consoleLogs": [
     { "level": "error", "text": "Failed to fetch /api/data", "timestamp": "..." }
   ]
 }
 ```
+
+`target`/`selectors` are captured for every action with a selector (skipped for `navigate`). `frame` is present only for actions inside iframes.
 
 ### snapshots.jsonl
 
@@ -119,8 +140,9 @@ See [docs/DATA_FORMAT.md](docs/DATA_FORMAT.md) and [docs/TEST_GUIDE.md](docs/TES
 
 1. Launches headed Chromium with Playwright's built-in codegen recorder UI
 2. Hooks into codegen events (`actionAdded`/`actionUpdated`) via internal `_enableRecorder` API
-3. On each action: captures accessibility tree + cleaned DOM + screenshot + console logs
-4. On browser close: writes JSONL files, generates `SESSION.md`, archives into `.tar.gz`
+3. On each action: captures accessibility tree + cleaned DOM + screenshot + console logs + target element snapshot with selector candidates
+4. Walks `framePath` for actions inside iframes — target element, DOM snapshot and selectors are captured from the correct frame
+5. On browser close: writes JSONL files, generates `SESSION.md`, archives into `.tar.gz`
 
 Uses Playwright internal API (underscore-prefixed). Playwright version pinned to 1.58.2.
 
