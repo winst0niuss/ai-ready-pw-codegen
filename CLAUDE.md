@@ -57,9 +57,10 @@ Playwright Codegen (built-in recorder)
 
 - **`src/main.ts`** — CLI entry point, URL validation with protocol fallback, launches Chromium, handles shutdown + archiving
 - **`src/recorder.ts`** — Core class: enables codegen via `_enableRecorder`, listens for `actionAdded`/`actionUpdated` events, captures snapshots and console logs. Stores actions in memory arrays, writes JSONL on finalize. Supports `max-actions` stop via `onStop()` callback
-- **`src/types.ts`** — All shared interfaces (`ConsoleLogEntry`, `RecordedAction`, `DomSnapshot`, `CodegenActionData`, `SessionMetadata`, `RecorderOptions`)
+- **`src/types.ts`** — All shared interfaces (`ConsoleLogEntry`, `RecordedAction`, `DomSnapshot`, `CodegenActionData`, `SessionMetadata`, `RecorderOptions`, `TargetSnapshot`, `SelectorCandidates`, `FrameContext`)
 - **`src/snapshot/dom-cleaner.ts`** — Runs in browser via `page.evaluate()`: clones full page DOM from body, strips non-test attributes, max depth 30, max text 200 chars
 - **`src/snapshot/accessibility.ts`** — `page.accessibility.snapshot()` with fallback to `ariaSnapshot()`
+- **`src/snapshot/target-element.ts`** — Runs in browser via `elementHandle.evaluate()`: captures target element snapshot (tag, ARIA role, accessible name, state, bounding box, ancestors, computed style) + builds selector candidates (testId, role+name, label, placeholder, text, CSS, XPath)
 - **`src/utils/archiver.ts`** — Creates `.tar.gz` archive via `spawnSync('tar', [...])` (no shell interpolation)
 - **`src/utils/analysis-prompt.ts`** — Generates `SESSION.md` with session metadata
 - **`src/utils/fs-helpers.ts`** — Async `ensureDir`, `writeScreenshot`, `generateOutputDir`
@@ -67,6 +68,7 @@ Playwright Codegen (built-in recorder)
 ### Key Patterns
 
 - **Sequential Promise queue**: Actions are processed one-at-a-time via `actionQueue` chain in `recorder.ts`. Never parallel — order matters.
+- **Frame resolution for iframe actions**: `recorder.ts::resolveFrame` walks `CodegenActionData.frame.framePath` via `locator(sel).elementHandle().contentFrame()` for each level, returning the target `Frame`. `captureTargetElement` and the DOM cleaner then run in that frame's context. On any failure — graceful fallback to `page`. Accessibility tree is always captured from `page` (Playwright `Frame` has no `.accessibility` API).
 - **DOM cleaner runs in-browser**: `dom-cleaner.ts` exports a function passed to `page.evaluate()`. Whitelists test/semantic attributes, strips scripts/styles, max depth 30, max text 200 chars.
 - **Console log capture**: Subscribes to `page.on('console')` and `page.on('pageerror')`, accumulates logs between actions, attaches them to the next `RecordedAction.consoleLogs`.
 - **Finalization safety**: 5s timeout on action queue drain + 10s absolute timeout in `main.ts` to prevent zombie processes. Shutdown triggers: context close, page close, browser disconnect, SIGINT, SIGTERM.
@@ -89,4 +91,4 @@ recordings/test-YYYY-MM-DDTHH-mm-ss/
 
 Action types are determined by Playwright codegen: `navigate`, `click`, `fill`, `press`, `select`, `check`, `uncheck`, `hover`, etc.
 
-Each action line in `actions.jsonl` includes `action.codegenCode` (generated Playwright code), `action.position`/`modifiers`/`button`/`clickCount` (full codegen data), `accessibilityTree`, `screenshotFile`, and optional `consoleLogs`. DOM snapshots are in separate `snapshots.jsonl` to save context window.
+Each action line in `actions.jsonl` includes `action.codegenCode` (generated Playwright code), `action.position`/`modifiers`/`button`/`clickCount` (full codegen data), `target` (element snapshot with state, ARIA, bounding box), `selectors` (testId/role/css/xpath candidates), `frame` (iframe context — present only for actions inside iframes), `accessibilityTree`, `screenshotFile`, and optional `consoleLogs`. DOM snapshots are in separate `snapshots.jsonl` to save context window.
