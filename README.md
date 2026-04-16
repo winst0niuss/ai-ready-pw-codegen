@@ -28,6 +28,7 @@ A Chromium browser opens with Playwright's recorder UI. Interact with the page. 
 [003] fill       → textbox "Email" = "user@example.com"
 [004] fill       → textbox "Password" = "••••••••"
 [005] click      → button "Submit"
+
 🎬 Recorded 5 actions
 📦 Archive: ./recordings/test-2026-03-23T15-08-06.zip
 ✨ Done! Send the archive to AI for analysis. 🤖
