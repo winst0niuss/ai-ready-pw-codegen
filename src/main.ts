@@ -80,10 +80,10 @@ async function main() {
   };
 
   console.log(`🎭 AI-Ready PW Codegen`);
-  console.log(`   URL: ${validatedUrl}`);
-  console.log(`   Output: ${outputDir}`);
+  console.log(`🌐 URL: ${validatedUrl}`);
+  console.log(`📂 Output: ${outputDir}`);
   console.log('');
-  console.log('Recording... Close the browser to stop.');
+  console.log('🔴 Recording... Close the browser to stop.');
 
   const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext({
@@ -111,9 +111,9 @@ async function main() {
 
       if (!noArchive) {
         const archivePath = await createArchive(outputDir);
-        console.log(`Archive: ${archivePath}`);
+        console.log(`📦 Archive: ${archivePath}`);
       }
-      console.log('✅ Done! Send the archive to AI for analysis.');
+      console.log('✨ Done! Send the archive to AI for analysis. 🤖');
     } catch (err) {
       console.error('Finalization error:', err);
     }

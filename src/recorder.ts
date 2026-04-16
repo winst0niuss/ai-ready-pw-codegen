@@ -349,7 +349,7 @@ export class Recorder {
       viewportSize: this.options.viewport,
     };
 
-    console.log(`Recorded ${this.actionIndex} actions`);
+    console.log(`🎬 Recorded ${this.actionIndex} actions`);
     return metadata;
   }
 }

@@ -19,18 +19,18 @@ A Chromium browser opens with Playwright's recorder UI. Interact with the page. 
 
 ```
 🎭 AI-Ready PW Codegen
-   URL: https://your-app.com
-   Output: ./recordings/test-2026-03-23T15-08-06
+🌐 URL: https://your-app.com
+📂 Output: ./recordings/test-2026-03-23T15-08-06
 
-Recording... Close the browser to stop.
+🔴 Recording... Close the browser to stop.
 [001] navigate   → https://your-app.com
 [002] click      → button "Sign in"
 [003] fill       → textbox "Email" = "user@example.com"
 [004] fill       → textbox "Password" = "••••••••"
 [005] click      → button "Submit"
-Recorded 5 actions
-Archive: ./recordings/test-2026-03-23T15-08-06.zip
-✅ Done! Send the archive to AI for analysis.
+🎬 Recorded 5 actions
+📦 Archive: ./recordings/test-2026-03-23T15-08-06.zip
+✨ Done! Send the archive to AI for analysis. 🤖
 ```
 
 ## Why?
