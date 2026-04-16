@@ -26,6 +26,12 @@ npm run record -- <URL> [options]
 # Type check
 npx tsc --noEmit
 
+# Run unit tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
 # Build to dist/
 npm run build
 ```

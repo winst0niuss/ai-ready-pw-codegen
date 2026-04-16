@@ -21,7 +21,7 @@ export function writeAnalysisPrompt(outputDir: string, metadata: SessionMetadata
 ├── TEST_GUIDE.md           ← test generation guidelines
 ├── actions.jsonl            ← all actions, one JSON per line (start here)
 ├── snapshots.jsonl          ← cleaned DOM snapshots, one per line (read on demand)
-└── screenshots/             ← PNG screenshots matching action index
+└── screenshots/             ← JPEG screenshots matching action index
 \`\`\`
 
 ## Next Steps

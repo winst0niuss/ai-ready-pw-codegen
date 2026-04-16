@@ -6,48 +6,9 @@ import { generateOutputDir, copyDocsToOutput } from './utils/fs-helpers';
 import { createArchive } from './utils/archiver';
 import { writeAnalysisPrompt } from './utils/analysis-prompt';
 import { RecorderOptions } from './types';
+import { parseAndValidateUrl, parseViewportSize } from './utils/cli-parsers';
 
-const DEFAULT_VIEWPORT_WIDTH = 1280;
-const DEFAULT_VIEWPORT_HEIGHT = 720;
 const FINALIZE_TIMEOUT_MS = 10000;
-
-function parseAndValidateUrl(raw: string): { url: string; needsProtocolFallback: boolean } {
-  // Protocol is explicit — use as is
-  if (/^https?:\/\//i.test(raw)) {
-    try {
-      new URL(raw);
-    } catch {
-      console.error(`Invalid URL: ${raw}`);
-      process.exit(1);
-    }
-    return { url: raw, needsProtocolFallback: false };
-  }
-
-  // No protocol — validate format; protocol will be picked up on connect
-  try {
-    new URL(`http://${raw}`);
-  } catch {
-    console.error(`Invalid URL: ${raw}`);
-    process.exit(1);
-  }
-  return { url: raw, needsProtocolFallback: true };
-}
-
-function parseViewportSize(raw: string | undefined): { width: number; height: number } {
-  if (!raw) return { width: DEFAULT_VIEWPORT_WIDTH, height: DEFAULT_VIEWPORT_HEIGHT };
-  const match = raw.match(/^(\d+),(\d+)$/);
-  if (!match) {
-    console.error(`Invalid --viewport-size: "${raw}" (expected format: 1280,720)`);
-    process.exit(1);
-  }
-  const width = parseInt(match[1], 10);
-  const height = parseInt(match[2], 10);
-  if (width <= 0 || width > 7680 || height <= 0 || height > 7680) {
-    console.error(`Invalid --viewport-size: "${raw}" (values must be 1–7680)`);
-    process.exit(1);
-  }
-  return { width, height };
-}
 
 async function main() {
   const args = process.argv.slice(2);
@@ -57,9 +18,6 @@ async function main() {
   const noArchive = args.includes('--no-archive');
   const noConsole = args.includes('--no-console');
   const outputBase = getArgValue(args, '--output-dir') || './recordings';
-  const { width: viewportWidth, height: viewportHeight } = parseViewportSize(
-    getArgValue(args, '--viewport-size'),
-  );
   const maxActionsRaw = getArgValue(args, '--max-actions');
   const maxActions = maxActionsRaw ? parseInt(maxActionsRaw, 10) : undefined;
 
@@ -93,12 +51,28 @@ async function main() {
     screenshotQuality = (!isNaN(q) && q >= 1 && q <= 100) ? q : 80;
   }
 
-  const { url: validatedUrl, needsProtocolFallback } = parseAndValidateUrl(url);
+  let validatedUrl: string;
+  let needsProtocolFallback: boolean;
+  try {
+    ({ url: validatedUrl, needsProtocolFallback } = parseAndValidateUrl(url));
+  } catch (err: any) {
+    console.error(err.message);
+    process.exit(1);
+  }
+
+  let viewportSize: { width: number; height: number };
+  try {
+    viewportSize = parseViewportSize(getArgValue(args, '--viewport-size'));
+  } catch (err: any) {
+    console.error(err.message);
+    process.exit(1);
+  }
+
   const outputDir = await generateOutputDir(path.resolve(outputBase));
   const options: RecorderOptions = {
     outputDir,
     screenshots: !noScreenshots,
-    viewport: { width: viewportWidth, height: viewportHeight },
+    viewport: viewportSize!,
     noArchive,
     maxActions,
     captureConsole: !noConsole,
