@@ -67,7 +67,7 @@ export class Recorder {
   // Callback to stop on max-actions
   private onMaxActionsReached?: () => void;
   private needsProtocolFallback: boolean;
-  // Флаг: текущая строка в терминале незавершена (ожидает \n)
+  // Whether the current progress line has not been terminated with \n yet
   private progressLineActive = false;
 
   constructor(context: BrowserContext, page: Page, startUrl: string, options: RecorderOptions, needsProtocolFallback = false) {
@@ -320,18 +320,18 @@ export class Recorder {
     this.snapshotsLines[lineIdx] = JSON.stringify(snapshot);
 
     // Human-readable progress line
-    // При обновлении (actionUpdated) перезаписываем строку через \r, финальная \n придёт при следующем actionAdded
+    // Never write \n immediately — commit the previous line only when a new action starts.
+    // This allows overwriting the line on actionUpdated, including the first character of a fill.
     const line = formatActionLine(index, data, targetResult?.target ?? null, hasFailed);
     if (isUpdate) {
-      process.stdout.write(`\r${line}`);
-      this.progressLineActive = true;
+      process.stdout.write(`\x1b[2K\r${line}`);
     } else {
       if (this.progressLineActive) {
         process.stdout.write('\n');
-        this.progressLineActive = false;
       }
-      process.stdout.write(`${line}\n`);
+      process.stdout.write(line);
     }
+    this.progressLineActive = true;
 
     // Stop on max-actions
     if (this.options.maxActions && this.actionIndex >= this.options.maxActions) {
@@ -346,7 +346,7 @@ export class Recorder {
       new Promise((resolve) => setTimeout(resolve, QUEUE_DRAIN_TIMEOUT_MS)),
     ]);
 
-    // Завершаем строку прогресса если она незакончена (последний экшн был fill/update)
+    // Flush the progress line if it was left without a trailing \n (e.g. last action was a fill)
     if (this.progressLineActive) {
       process.stdout.write('\n');
       this.progressLineActive = false;
