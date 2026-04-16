@@ -1,7 +1,7 @@
 # AI-Ready PW Codegen
 
 [![npm version](https://img.shields.io/npm/v/ai-ready-pw-codegen)](https://www.npmjs.com/package/ai-ready-pw-codegen)
-[![playwright](https://img.shields.io/badge/playwright-1.58.2-45ba4b)](https://playwright.dev/)
+[![playwright](https://img.shields.io/badge/playwright-1.59.1-45ba4b)](https://playwright.dev/)
 [![license](https://img.shields.io/npm/l/ai-ready-pw-codegen)](https://github.com/winst0niuss/ai-ready-pw-codegen/blob/main/LICENSE)
 
 Offline Playwright recorder. Captures each user action with accessibility tree, cleaned DOM, screenshot, and console logs — packages everything into an archive for AI-powered test generation.
@@ -23,8 +23,12 @@ A Chromium browser opens with Playwright's recorder UI. Interact with the page. 
    Output: ./recordings/test-2026-03-23T15-08-06
 
 Recording... Close the browser to stop.
-●●●●●●●●●●
-Recorded 10 actions
+[001] navigate   → https://your-app.com
+[002] click      → button "Sign in"
+[003] fill       → textbox "Email" = "user@example.com"
+[004] fill       → textbox "Password" = "••••••••"
+[005] click      → button "Submit"
+Recorded 5 actions
 Archive: ./recordings/test-2026-03-23T15-08-06.tar.gz
 ✅ Done! Send the archive to AI for analysis.
 ```
@@ -58,7 +62,10 @@ ai-ready-pw-codegen <URL> [options]
   --output-dir <path>  Output directory (default: ./recordings)
   --width <number>     Viewport width (default: 1280)
   --height <number>    Viewport height (default: 720)
+  --jpeg [quality]     Save screenshots as JPEG instead of PNG (default quality: 80)
 ```
+
+`--jpeg` significantly reduces archive size (60–80% smaller screenshots). Use when archive size matters more than lossless quality.
 
 URL protocol is auto-detected: tries `http://` first, falls back to `https://`. Explicit protocol (`http://...` or `https://...`) is used as-is.
 
@@ -72,7 +79,7 @@ recordings/test-YYYY-MM-DDTHH-mm-ss/
 ├── actions.jsonl           # One action per line — primary data
 ├── snapshots.jsonl         # Cleaned DOM per action — read on demand
 └── screenshots/
-    ├── 001-navigate.png
+    ├── 001-navigate.png    # PNG by default, .jpg with --jpeg
     └── 002-click.png
 ```
 
@@ -144,7 +151,7 @@ See [docs/DATA_FORMAT.md](docs/DATA_FORMAT.md) and [docs/TEST_GUIDE.md](docs/TES
 4. Walks `framePath` for actions inside iframes — target element, DOM snapshot and selectors are captured from the correct frame
 5. On browser close: writes JSONL files, generates `SESSION.md`, archives into `.tar.gz`
 
-Uses Playwright internal API (underscore-prefixed). Playwright version pinned to 1.58.2.
+Uses Playwright internal API (underscore-prefixed). Playwright version pinned to 1.59.1.
 
 ## Development
 

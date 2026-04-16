@@ -9,8 +9,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Run the recorder
+# Run the recorder (any of these are equivalent)
 npx ts-node src/main.ts <URL> [options]
+npm start -- <URL> [options]
+npm run record -- <URL> [options]
 
 # Options:
 #   --no-screenshots     Disable screenshots
@@ -21,6 +23,7 @@ npx ts-node src/main.ts <URL> [options]
 #   --output-dir <path>  Output directory (default: ./recordings)
 #   --width <number>     Viewport width (default: 1280)
 #   --height <number>    Viewport height (default: 720)
+#   --jpeg [quality]     Save screenshots as JPEG instead of PNG (default quality: 80)
 
 # Type check
 npx tsc --noEmit
@@ -51,7 +54,7 @@ Playwright Codegen (built-in recorder)
 
 **Protocol auto-detection**: When URL has no protocol, tries `http://` first, falls back to `https://`. Explicit `http://` or `https://` used as-is.
 
-**Important**: Uses Playwright internal API (underscore-prefixed). Playwright version is pinned to 1.58.2 to prevent breakage.
+**Important**: Uses Playwright internal API (underscore-prefixed). Playwright version is pinned (currently `1.59.1`) to prevent breakage — bump only after verifying `_enableRecorder` still works.
 
 ### Key Files
 
@@ -71,6 +74,7 @@ Playwright Codegen (built-in recorder)
 - **Frame resolution for iframe actions**: `recorder.ts::resolveFrame` walks `CodegenActionData.frame.framePath` via `locator(sel).elementHandle().contentFrame()` for each level, returning the target `Frame`. `captureTargetElement` and the DOM cleaner then run in that frame's context. On any failure — graceful fallback to `page`. Accessibility tree is always captured from `page` (Playwright `Frame` has no `.accessibility` API).
 - **DOM cleaner runs in-browser**: `dom-cleaner.ts` exports a function passed to `page.evaluate()`. Whitelists test/semantic attributes, strips scripts/styles, max depth 30, max text 200 chars.
 - **Console log capture**: Subscribes to `page.on('console')` and `page.on('pageerror')`, accumulates logs between actions, attaches them to the next `RecordedAction.consoleLogs`.
+- **Console progress**: Each action prints a human-readable line `[NNN] <type> → <description>` via `formatActionLine()` in `recorder.ts`. Green = success, yellow = capture failed. Description is derived from `target.role`/`target.accessibleName` when available, fallback to selector or URL.
 - **Finalization safety**: 5s timeout on action queue drain + 10s absolute timeout in `main.ts` to prevent zombie processes. Shutdown triggers: context close, page close, browser disconnect, SIGINT, SIGTERM.
 - **`@ts-expect-error` for internal APIs**: Used to suppress TS errors on `_enableRecorder` and other underscore-prefixed Playwright internals.
 - **Non-blocking captures**: Screenshot/snapshot failures don't block action recording.
@@ -89,6 +93,6 @@ recordings/test-YYYY-MM-DDTHH-mm-ss/
     └── 002-click.png
 ```
 
-Action types are determined by Playwright codegen: `navigate`, `click`, `fill`, `press`, `select`, `check`, `uncheck`, `hover`, etc.
+Action types are determined by Playwright codegen: `navigate`, `click`, `fill`, `press`, `select`, `check`, `uncheck`, `hover`, etc. Screenshots are PNG by default; pass `--jpeg [quality]` to use JPEG (saves 60–80% archive size).
 
 Each action line in `actions.jsonl` includes `action.codegenCode` (generated Playwright code), `action.position`/`modifiers`/`button`/`clickCount` (full codegen data), `target` (element snapshot with state, ARIA, bounding box), `selectors` (testId/role/css/xpath candidates), `frame` (iframe context — present only for actions inside iframes), `accessibilityTree`, `screenshotFile`, and optional `consoleLogs`. DOM snapshots are in separate `snapshots.jsonl` to save context window.

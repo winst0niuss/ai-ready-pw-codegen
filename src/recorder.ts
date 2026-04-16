@@ -1,11 +1,50 @@
 import type { Page, BrowserContext, ConsoleMessage, Frame } from 'playwright';
 import fs from 'fs';
 import path from 'path';
-import { CodegenActionData, ConsoleLogEntry, FrameContext, RecordedAction, SessionMetadata, RecorderOptions } from './types';
+import { CodegenActionData, ConsoleLogEntry, FrameContext, RecordedAction, SessionMetadata, RecorderOptions, TargetSnapshot } from './types';
 import { getDomCleanerScript } from './snapshot/dom-cleaner';
 import { captureAccessibilityTree } from './snapshot/accessibility';
 import { captureTargetElement } from './snapshot/target-element';
 import { writeScreenshot } from './utils/fs-helpers';
+
+function formatActionLine(
+  index: number,
+  actionData: CodegenActionData,
+  target: TargetSnapshot | null,
+  failed: boolean
+): string {
+  const num = String(index).padStart(3, '0');
+  const type = actionData.action.name.padEnd(10);
+
+  let description = '';
+  switch (actionData.action.name) {
+    case 'navigate':
+      description = actionData.action.url ?? actionData.action.selector ?? '';
+      break;
+    case 'fill':
+    case 'select': {
+      const name = target?.accessibleName || actionData.action.selector || '';
+      const role = target?.role ? `${target.role} ` : '';
+      const val = actionData.action.text !== undefined ? ` = "${actionData.action.text}"` : '';
+      description = `${role}"${name}"${val}`;
+      break;
+    }
+    case 'press':
+      description = actionData.action.key ?? '';
+      break;
+    default: {
+      if (target?.accessibleName && target.role) {
+        description = `${target.role} "${target.accessibleName}"`;
+      } else {
+        description = actionData.action.selector ?? '';
+      }
+    }
+  }
+
+  const warn = failed ? '  \x1b[33m⚠ capture failed\x1b[0m' : '';
+  const color = failed ? '\x1b[33m' : '\x1b[32m';
+  return `${color}[${num}]\x1b[0m ${type} → ${description}${warn}`;
+}
 
 const QUEUE_DRAIN_TIMEOUT_MS = 5000;
 
@@ -233,10 +272,15 @@ export class Recorder {
     let screenshotFile: string | null = null;
     if (this.options.screenshots) {
       try {
-        const screenshotPath = path.join(this.outputDir, 'screenshots', `${paddedIndex}-${actionName}.png`);
-        const buffer = await page.screenshot({ fullPage: false });
+        const fmt = this.options.screenshotFormat ?? 'png';
+        const ext = fmt === 'jpeg' ? 'jpg' : 'png';
+        const screenshotPath = path.join(this.outputDir, 'screenshots', `${paddedIndex}-${actionName}.${ext}`);
+        const screenshotOpts = fmt === 'jpeg'
+          ? { fullPage: false, type: 'jpeg' as const, quality: this.options.screenshotQuality ?? 80 }
+          : { fullPage: false };
+        const buffer = await page.screenshot(screenshotOpts);
         await writeScreenshot(screenshotPath, buffer);
-        screenshotFile = `screenshots/${paddedIndex}-${actionName}.png`;
+        screenshotFile = `screenshots/${paddedIndex}-${actionName}.${ext}`;
       } catch {
         hasFailed = true;
       }
@@ -278,13 +322,11 @@ export class Recorder {
     this.actionsLines[lineIdx] = JSON.stringify(action);
     this.snapshotsLines[lineIdx] = JSON.stringify(snapshot);
 
-    // Minimal progress: colored dot
-    const dot = hasFailed ? '\x1b[33m●\x1b[0m' : '\x1b[32m●\x1b[0m';
-    process.stdout.write(dot);
+    // Human-readable progress line
+    console.log(formatActionLine(index, data, targetResult?.target ?? null, hasFailed));
 
     // Stop on max-actions
     if (this.options.maxActions && this.actionIndex >= this.options.maxActions) {
-      process.stdout.write('\n');
       this.onMaxActionsReached?.();
     }
   }
@@ -312,7 +354,6 @@ export class Recorder {
       viewportSize: this.options.viewport,
     };
 
-    process.stdout.write('\n');
     console.log(`Recorded ${this.actionIndex} actions`);
     return metadata;
   }
