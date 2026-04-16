@@ -74,18 +74,16 @@ async function main() {
     console.log('  --output-dir <path>  Output directory (default: ./recordings)');
     console.log('  --width <number>     Viewport width (default: 1280)');
     console.log('  --height <number>    Viewport height (default: 720)');
-    console.log('  --jpeg [quality]     Save screenshots as JPEG (default quality: 80)');
+    console.log('  --jpeg [quality]     Screenshot quality for JPEG (default: 80); JPEG is the default format');
     console.log('');
     console.log('Example: npx ai-ready-pw-codegen https://example.com');
     process.exit(1);
   }
 
   // Parse --jpeg [quality]
-  let screenshotFormat: 'png' | 'jpeg' | undefined;
   let screenshotQuality: number | undefined;
   const jpegIdx = args.indexOf('--jpeg');
   if (jpegIdx !== -1) {
-    screenshotFormat = 'jpeg';
     const maybeQuality = args[jpegIdx + 1];
     const q = parseInt(maybeQuality, 10);
     screenshotQuality = (!isNaN(q) && q >= 1 && q <= 100) ? q : 80;
@@ -101,7 +99,7 @@ async function main() {
     maxActions,
     headless,
     captureConsole: !noConsole,
-    ...(screenshotFormat && { screenshotFormat, screenshotQuality }),
+    ...(screenshotQuality !== undefined && { screenshotQuality }),
   };
 
   console.log(`🎭 AI-Ready PW Codegen`);

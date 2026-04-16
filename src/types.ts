@@ -111,8 +111,7 @@ export interface RecorderOptions {
   maxActions?: number;
   headless?: boolean;
   captureConsole?: boolean;
-  screenshotFormat?: 'png' | 'jpeg';
-  screenshotQuality?: number; // 1-100, only for jpeg
+  screenshotQuality?: number; // 1-100, JPEG quality
 }
 
 // Data from Playwright codegen eventSink

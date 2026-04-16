@@ -272,15 +272,10 @@ export class Recorder {
     let screenshotFile: string | null = null;
     if (this.options.screenshots) {
       try {
-        const fmt = this.options.screenshotFormat ?? 'png';
-        const ext = fmt === 'jpeg' ? 'jpg' : 'png';
-        const screenshotPath = path.join(this.outputDir, 'screenshots', `${paddedIndex}-${actionName}.${ext}`);
-        const screenshotOpts = fmt === 'jpeg'
-          ? { fullPage: false, type: 'jpeg' as const, quality: this.options.screenshotQuality ?? 80 }
-          : { fullPage: false };
-        const buffer = await page.screenshot(screenshotOpts);
+        const screenshotPath = path.join(this.outputDir, 'screenshots', `${paddedIndex}-${actionName}.jpg`);
+        const buffer = await page.screenshot({ fullPage: false, type: 'jpeg', quality: this.options.screenshotQuality ?? 80 });
         await writeScreenshot(screenshotPath, buffer);
-        screenshotFile = `screenshots/${paddedIndex}-${actionName}.${ext}`;
+        screenshotFile = `screenshots/${paddedIndex}-${actionName}.jpg`;
       } catch {
         hasFailed = true;
       }

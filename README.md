@@ -62,10 +62,8 @@ ai-ready-pw-codegen <URL> [options]
   --output-dir <path>  Output directory (default: ./recordings)
   --width <number>     Viewport width (default: 1280)
   --height <number>    Viewport height (default: 720)
-  --jpeg [quality]     Save screenshots as JPEG instead of PNG (default quality: 80)
+  --jpeg [quality]     JPEG screenshot quality (default: 80). JPEG is the default format; use --no-screenshots to disable
 ```
-
-`--jpeg` significantly reduces archive size (60–80% smaller screenshots). Use when archive size matters more than lossless quality.
 
 URL protocol is auto-detected: tries `http://` first, falls back to `https://`. Explicit protocol (`http://...` or `https://...`) is used as-is.
 
@@ -79,7 +77,7 @@ recordings/test-YYYY-MM-DDTHH-mm-ss/
 ├── actions.jsonl           # One action per line — primary data
 ├── snapshots.jsonl         # Cleaned DOM per action — read on demand
 └── screenshots/
-    ├── 001-navigate.png    # PNG by default, .jpg with --jpeg
+    ├── 001-navigate.jpg    # JPEG by default (use --jpeg [quality] to tune, default quality: 80)
     └── 002-click.png
 ```
 

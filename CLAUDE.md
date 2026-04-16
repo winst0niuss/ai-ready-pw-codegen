@@ -93,6 +93,6 @@ recordings/test-YYYY-MM-DDTHH-mm-ss/
     └── 002-click.png
 ```
 
-Action types are determined by Playwright codegen: `navigate`, `click`, `fill`, `press`, `select`, `check`, `uncheck`, `hover`, etc. Screenshots are PNG by default; pass `--jpeg [quality]` to use JPEG (saves 60–80% archive size).
+Action types are determined by Playwright codegen: `navigate`, `click`, `fill`, `press`, `select`, `check`, `uncheck`, `hover`, etc. Screenshots are **JPEG by default** (quality 80); pass `--jpeg [quality]` to override quality.
 
 Each action line in `actions.jsonl` includes `action.codegenCode` (generated Playwright code), `action.position`/`modifiers`/`button`/`clickCount` (full codegen data), `target` (element snapshot with state, ARIA, bounding box), `selectors` (testId/role/css/xpath candidates), `frame` (iframe context — present only for actions inside iframes), `accessibilityTree`, `screenshotFile`, and optional `consoleLogs`. DOM snapshots are in separate `snapshots.jsonl` to save context window.
