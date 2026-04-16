@@ -67,6 +67,8 @@ export class Recorder {
   // Callback to stop on max-actions
   private onMaxActionsReached?: () => void;
   private needsProtocolFallback: boolean;
+  // Флаг: текущая строка в терминале незавершена (ожидает \n)
+  private progressLineActive = false;
 
   constructor(context: BrowserContext, page: Page, startUrl: string, options: RecorderOptions, needsProtocolFallback = false) {
     this.context = context;
@@ -318,7 +320,18 @@ export class Recorder {
     this.snapshotsLines[lineIdx] = JSON.stringify(snapshot);
 
     // Human-readable progress line
-    console.log(formatActionLine(index, data, targetResult?.target ?? null, hasFailed));
+    // При обновлении (actionUpdated) перезаписываем строку через \r, финальная \n придёт при следующем actionAdded
+    const line = formatActionLine(index, data, targetResult?.target ?? null, hasFailed);
+    if (isUpdate) {
+      process.stdout.write(`\r${line}`);
+      this.progressLineActive = true;
+    } else {
+      if (this.progressLineActive) {
+        process.stdout.write('\n');
+        this.progressLineActive = false;
+      }
+      process.stdout.write(`${line}\n`);
+    }
 
     // Stop on max-actions
     if (this.options.maxActions && this.actionIndex >= this.options.maxActions) {
@@ -332,6 +345,12 @@ export class Recorder {
       this.actionQueue,
       new Promise((resolve) => setTimeout(resolve, QUEUE_DRAIN_TIMEOUT_MS)),
     ]);
+
+    // Завершаем строку прогресса если она незакончена (последний экшн был fill/update)
+    if (this.progressLineActive) {
+      process.stdout.write('\n');
+      this.progressLineActive = false;
+    }
 
     // Write JSONL files
     const actionsPath = path.join(this.outputDir, 'actions.jsonl');
