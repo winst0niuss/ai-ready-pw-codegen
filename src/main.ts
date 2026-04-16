@@ -33,14 +33,20 @@ function parseAndValidateUrl(raw: string): { url: string; needsProtocolFallback:
   return { url: raw, needsProtocolFallback: true };
 }
 
-function parseViewport(raw: string | undefined, defaultVal: number, name: string): number {
-  if (!raw) return defaultVal;
-  const val = parseInt(raw, 10);
-  if (isNaN(val) || val <= 0 || val > 7680) {
-    console.error(`Invalid ${name}: ${raw} (expected 1–7680)`);
+function parseViewportSize(raw: string | undefined): { width: number; height: number } {
+  if (!raw) return { width: DEFAULT_VIEWPORT_WIDTH, height: DEFAULT_VIEWPORT_HEIGHT };
+  const match = raw.match(/^(\d+),(\d+)$/);
+  if (!match) {
+    console.error(`Invalid --viewport-size: "${raw}" (expected format: 1280,720)`);
     process.exit(1);
   }
-  return val;
+  const width = parseInt(match[1], 10);
+  const height = parseInt(match[2], 10);
+  if (width <= 0 || width > 7680 || height <= 0 || height > 7680) {
+    console.error(`Invalid --viewport-size: "${raw}" (values must be 1–7680)`);
+    process.exit(1);
+  }
+  return { width, height };
 }
 
 async function main() {
@@ -51,8 +57,9 @@ async function main() {
   const noArchive = args.includes('--no-archive');
   const noConsole = args.includes('--no-console');
   const outputBase = getArgValue(args, '--output-dir') || './recordings';
-  const viewportWidth = parseViewport(getArgValue(args, '--width'), DEFAULT_VIEWPORT_WIDTH, 'width');
-  const viewportHeight = parseViewport(getArgValue(args, '--height'), DEFAULT_VIEWPORT_HEIGHT, 'height');
+  const { width: viewportWidth, height: viewportHeight } = parseViewportSize(
+    getArgValue(args, '--viewport-size'),
+  );
   const maxActionsRaw = getArgValue(args, '--max-actions');
   const maxActions = maxActionsRaw ? parseInt(maxActionsRaw, 10) : undefined;
 
@@ -70,8 +77,7 @@ async function main() {
     console.log('  --no-console         Disable console log capture');
     console.log('  --max-actions <N>    Stop after N actions');
     console.log('  --output-dir <path>  Output directory (default: ./recordings)');
-    console.log('  --width <number>     Viewport width (default: 1280)');
-    console.log('  --height <number>    Viewport height (default: 720)');
+    console.log('  --viewport-size=W,H  Viewport size (default: 1280,720)');
     console.log('  --jpeg [quality]     Screenshot quality for JPEG (default: 80); JPEG is the default format');
     console.log('');
     console.log('Example: npx ai-ready-pw-codegen https://example.com');
