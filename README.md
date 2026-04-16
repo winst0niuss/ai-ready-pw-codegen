@@ -29,7 +29,7 @@ Recording... Close the browser to stop.
 [004] fill       → textbox "Password" = "••••••••"
 [005] click      → button "Submit"
 Recorded 5 actions
-Archive: ./recordings/test-2026-03-23T15-08-06.tar.gz
+Archive: ./recordings/test-2026-03-23T15-08-06.zip
 ✅ Done! Send the archive to AI for analysis.
 ```
 
@@ -55,9 +55,8 @@ What gets captured per action:
 ai-ready-pw-codegen <URL> [options]
 
   --no-screenshots     Disable screenshots
-  --no-archive         Skip .tar.gz creation
+  --no-archive         Skip .zip creation
   --no-console         Disable console log capture
-  --headless           Run in headless mode
   --max-actions <N>    Stop after N actions
   --output-dir <path>  Output directory (default: ./recordings)
   --width <number>     Viewport width (default: 1280)
@@ -78,7 +77,7 @@ recordings/test-YYYY-MM-DDTHH-mm-ss/
 ├── snapshots.jsonl         # Cleaned DOM per action — read on demand
 └── screenshots/
     ├── 001-navigate.jpg    # JPEG by default (use --jpeg [quality] to tune, default quality: 80)
-    └── 002-click.png
+    └── 002-click.jpg
 ```
 
 ### actions.jsonl
@@ -112,7 +111,7 @@ recordings/test-YYYY-MM-DDTHH-mm-ss/
   },
   "frame": { "path": ["iframe#checkout"], "url": "https://pay.example.com/form" },
   "accessibilityTree": { "role": "WebArea", "children": [] },
-  "screenshotFile": "screenshots/002-click.png",
+  "screenshotFile": "screenshots/002-click.jpg",
   "consoleLogs": [
     { "level": "error", "text": "Failed to fetch /api/data", "timestamp": "..." }
   ]
@@ -132,7 +131,7 @@ DOM snapshots are large — separated from actions to save AI context window. Ea
 ai-ready-pw-codegen https://your-app.com
 
 # 2. Extract
-tar -xzf recordings/test-*.tar.gz
+unzip recordings/test-*.zip
 
 # 3. Point AI to the directory
 # Claude Code / Cursor / Gemini CLI reads SESSION.md first,
@@ -147,7 +146,7 @@ See [docs/DATA_FORMAT.md](docs/DATA_FORMAT.md) and [docs/TEST_GUIDE.md](docs/TES
 2. Hooks into codegen events (`actionAdded`/`actionUpdated`) via internal `_enableRecorder` API
 3. On each action: captures accessibility tree + cleaned DOM + screenshot + console logs + target element snapshot with selector candidates
 4. Walks `framePath` for actions inside iframes — target element, DOM snapshot and selectors are captured from the correct frame
-5. On browser close: writes JSONL files, generates `SESSION.md`, archives into `.tar.gz`
+5. On browser close: writes JSONL files, generates `SESSION.md`, archives into `.zip`
 
 Uses Playwright internal API (underscore-prefixed). Playwright version pinned to 1.59.1.
 

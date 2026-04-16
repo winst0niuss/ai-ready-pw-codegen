@@ -1,15 +1,21 @@
-import { spawnSync } from 'child_process';
+import archiver from 'archiver';
+import fs from 'fs';
 import path from 'path';
 
-export function createArchive(outputDir: string): string {
+export function createArchive(outputDir: string): Promise<string> {
   const dirName = path.basename(outputDir);
   const parentDir = path.dirname(outputDir);
-  const archivePath = path.join(parentDir, `${dirName}.tar.gz`);
+  const archivePath = path.join(parentDir, `${dirName}.zip`);
 
-  const result = spawnSync('tar', ['-czf', archivePath, '-C', parentDir, dirName]);
-  if (result.status !== 0) {
-    const stderr = result.stderr?.toString() || 'unknown error';
-    throw new Error(`Failed to create archive: ${stderr}`);
-  }
-  return archivePath;
+  return new Promise((resolve, reject) => {
+    const output = fs.createWriteStream(archivePath);
+    const archive = archiver('zip', { zlib: { level: 6 } });
+
+    output.on('close', () => resolve(archivePath));
+    archive.on('error', reject);
+
+    archive.pipe(output);
+    archive.directory(outputDir, dirName);
+    archive.finalize();
+  });
 }

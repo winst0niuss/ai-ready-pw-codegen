@@ -14,7 +14,7 @@ test-YYYY-MM-DDTHH-mm-ss/
 ├── actions.jsonl           ← all actions, one JSON per line
 ├── snapshots.jsonl         ← cleaned DOM snapshots (read on demand)
 └── screenshots/
-    ├── 001-navigate.png
+    ├── 001-navigate.jpg
     └── ...
 ```
 

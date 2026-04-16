@@ -109,7 +109,6 @@ export interface RecorderOptions {
   viewport: { width: number; height: number };
   noArchive?: boolean;
   maxActions?: number;
-  headless?: boolean;
   captureConsole?: boolean;
   screenshotQuality?: number; // 1-100, JPEG quality
 }

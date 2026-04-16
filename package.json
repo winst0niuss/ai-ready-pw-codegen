@@ -44,9 +44,11 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "archiver": "^7.0.1",
     "playwright": "1.59.1"
   },
   "devDependencies": {
+    "@types/archiver": "^7.0.0",
     "@types/node": "^20.10.4",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"

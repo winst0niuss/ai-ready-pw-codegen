@@ -50,7 +50,6 @@ async function main() {
   const noScreenshots = args.includes('--no-screenshots');
   const noArchive = args.includes('--no-archive');
   const noConsole = args.includes('--no-console');
-  const headless = args.includes('--headless');
   const outputBase = getArgValue(args, '--output-dir') || './recordings';
   const viewportWidth = parseViewport(getArgValue(args, '--width'), DEFAULT_VIEWPORT_WIDTH, 'width');
   const viewportHeight = parseViewport(getArgValue(args, '--height'), DEFAULT_VIEWPORT_HEIGHT, 'height');
@@ -67,9 +66,8 @@ async function main() {
     console.log('');
     console.log('Options:');
     console.log('  --no-screenshots     Disable screenshots');
-    console.log('  --no-archive         Skip .tar.gz creation');
+    console.log('  --no-archive         Skip .zip creation');
     console.log('  --no-console         Disable console log capture');
-    console.log('  --headless           Run in headless mode');
     console.log('  --max-actions <N>    Stop after N actions');
     console.log('  --output-dir <path>  Output directory (default: ./recordings)');
     console.log('  --width <number>     Viewport width (default: 1280)');
@@ -97,7 +95,6 @@ async function main() {
     viewport: { width: viewportWidth, height: viewportHeight },
     noArchive,
     maxActions,
-    headless,
     captureConsole: !noConsole,
     ...(screenshotQuality !== undefined && { screenshotQuality }),
   };
@@ -108,7 +105,7 @@ async function main() {
   console.log('');
   console.log('Recording... Close the browser to stop.');
 
-  const browser = await chromium.launch({ headless });
+  const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext({
     viewport: options.viewport,
   });
@@ -133,7 +130,7 @@ async function main() {
       copyDocsToOutput(outputDir);
 
       if (!noArchive) {
-        const archivePath = createArchive(outputDir);
+        const archivePath = await createArchive(outputDir);
         console.log(`Archive: ${archivePath}`);
       }
       console.log('✅ Done! Send the archive to AI for analysis.');

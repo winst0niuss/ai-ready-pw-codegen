@@ -16,9 +16,8 @@ npm run record -- <URL> [options]
 
 # Options:
 #   --no-screenshots     Disable screenshots
-#   --no-archive         Skip .tar.gz creation
+#   --no-archive         Skip .zip creation
 #   --no-console         Disable console log capture
-#   --headless           Run in headless mode (no GUI inspector)
 #   --max-actions <N>    Stop after N actions
 #   --output-dir <path>  Output directory (default: ./recordings)
 #   --width <number>     Viewport width (default: 1280)
@@ -64,7 +63,7 @@ Playwright Codegen (built-in recorder)
 - **`src/snapshot/dom-cleaner.ts`** — Runs in browser via `page.evaluate()`: clones full page DOM from body, strips non-test attributes, max depth 30, max text 200 chars
 - **`src/snapshot/accessibility.ts`** — `page.accessibility.snapshot()` with fallback to `ariaSnapshot()`
 - **`src/snapshot/target-element.ts`** — Runs in browser via `elementHandle.evaluate()`: captures target element snapshot (tag, ARIA role, accessible name, state, bounding box, ancestors, computed style) + builds selector candidates (testId, role+name, label, placeholder, text, CSS, XPath)
-- **`src/utils/archiver.ts`** — Creates `.tar.gz` archive via `spawnSync('tar', [...])` (no shell interpolation)
+- **`src/utils/archiver.ts`** — Creates `.zip` archive via `archiver` npm package (cross-platform, pure JS)
 - **`src/utils/analysis-prompt.ts`** — Generates `SESSION.md` with session metadata
 - **`src/utils/fs-helpers.ts`** — Async `ensureDir`, `writeScreenshot`, `generateOutputDir`
 
@@ -89,8 +88,8 @@ recordings/test-YYYY-MM-DDTHH-mm-ss/
 ├── actions.jsonl           # all actions, one JSON per line (primary file)
 ├── snapshots.jsonl         # cleaned DOM snapshots, one per line (on demand)
 └── screenshots/
-    ├── 001-navigate.png
-    └── 002-click.png
+    ├── 001-navigate.jpg
+    └── 002-click.jpg
 ```
 
 Action types are determined by Playwright codegen: `navigate`, `click`, `fill`, `press`, `select`, `check`, `uncheck`, `hover`, etc. Screenshots are **JPEG by default** (quality 80); pass `--jpeg [quality]` to override quality.
