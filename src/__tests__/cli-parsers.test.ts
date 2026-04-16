@@ -32,7 +32,7 @@ describe('parseAndValidateUrl', () => {
 
 describe('parseViewportSize', () => {
   it('returns defaults when undefined', () => {
-    expect(parseViewportSize(undefined)).toEqual({ width: 1280, height: 720 });
+    expect(parseViewportSize(undefined)).toEqual({ width: 1920, height: 1080 });
   });
 
   it('parses standard desktop size', () => {

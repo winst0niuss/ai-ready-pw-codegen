@@ -60,7 +60,7 @@ ai-ready-pw-codegen <URL> [options]
   --no-console         Disable console log capture
   --max-actions <N>    Stop after N actions
   --output-dir <path>  Output directory (default: ./recordings)
-  --viewport-size=W,H  Viewport size (default: 1280,720)
+  --viewport-size=W,H  Viewport size (default: 1920,1080)
   --jpeg [quality]     JPEG screenshot quality (default: 80). JPEG is the default format; use --no-screenshots to disable
 ```
 
