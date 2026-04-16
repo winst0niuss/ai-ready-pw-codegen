@@ -11,7 +11,10 @@ export function createArchive(outputDir: string): Promise<string> {
     const output = fs.createWriteStream(archivePath);
     const archive = archiver('zip', { zlib: { level: 6 } });
 
-    output.on('close', () => resolve(archivePath));
+    output.on('close', () => {
+      fs.rmSync(outputDir, { recursive: true, force: true });
+      resolve(archivePath);
+    });
     archive.on('error', reject);
 
     archive.pipe(output);
