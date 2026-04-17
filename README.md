@@ -4,9 +4,21 @@
 [![playwright](https://img.shields.io/badge/playwright-1.59.1-45ba4b)](https://playwright.dev/)
 [![license](https://img.shields.io/npm/l/ai-ready-pw-codegen)](https://github.com/winst0niuss/ai-ready-pw-codegen/blob/main/LICENSE)
 
-Offline Playwright recorder. Captures each user action with accessibility tree, cleaned DOM, screenshot, and console logs — packages everything into an archive for AI-powered test generation.
+<br>
 
-> Record on any machine. Generate tests with AI later.
+**AI-Ready PW Codegen** is an offline Playwright recorder. It captures every user action alongside its **accessibility tree**, **cleaned DOM**, **screenshots**, and **console logs**, then packages everything into a structured archive for AI-powered test generation.
+
+<br>
+
+<p align="center">
+  <img src="architecture.svg" alt="AI-Ready PW Codegen Architecture" width="50%">
+</p>
+
+<p align="center">
+  <i>Record on any machine. Generate tests with AI later.</i>
+</p>
+
+<br>
 
 ## Quick Start
 
