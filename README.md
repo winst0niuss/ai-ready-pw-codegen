@@ -11,7 +11,7 @@
 <br>
 
 <p align="center">
-  <img src="architecture.svg" alt="AI-Ready PW Codegen Architecture" width="100%">
+  <img src="architecture.svg" alt="AI-Ready PW Codegen Architecture" width="110%">
 </p>
 
 <p align="center">
