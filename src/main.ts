@@ -10,10 +10,45 @@ import { parseAndValidateUrl, parseViewportSize } from './utils/cli-parsers';
 
 const FINALIZE_TIMEOUT_MS = 10000;
 
+const KNOWN_FLAGS = new Set([
+  '--no-screenshots', '--no-archive', '--no-console',
+  '--max-actions', '--output-dir', '--viewport-size', '--jpeg',
+  '--help', '--version', '-h', '-v',
+]);
+
+function printUsage() {
+  console.log('Usage: ai-ready-pw-codegen <URL> [options]');
+  console.log('');
+  console.log('Options:');
+  console.log('  --no-screenshots     Disable screenshots');
+  console.log('  --no-archive         Skip .zip creation');
+  console.log('  --no-console         Disable console log capture');
+  console.log('  --max-actions <N>    Stop after N actions');
+  console.log('  --output-dir <path>  Output directory (default: ./recordings)');
+  console.log('  --viewport-size=W,H  Viewport size (default: 1920,1080)');
+  console.log('  --jpeg [quality]     Screenshot quality for JPEG (default: 80); JPEG is the default format');
+  console.log('  --help, -h           Show this help');
+  console.log('  --version, -v        Show version');
+  console.log('');
+  console.log('Example: npx ai-ready-pw-codegen https://example.com');
+}
+
 async function main() {
   const args = process.argv.slice(2);
 
-  const url = args.find((a) => !a.startsWith('--'));
+  if (args.includes('--help') || args.includes('-h')) {
+    printUsage();
+    process.exit(0);
+  }
+
+  if (args.includes('--version') || args.includes('-v')) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { version } = require(path.join(__dirname, '../package.json')) as { version: string };
+    console.log(version);
+    process.exit(0);
+  }
+
+  const url = args.find((a) => !a.startsWith('-'));
   const noScreenshots = args.includes('--no-screenshots');
   const noArchive = args.includes('--no-archive');
   const noConsole = args.includes('--no-console');
@@ -26,19 +61,17 @@ async function main() {
     process.exit(1);
   }
 
+  const unknownFlags = args.filter((a) => {
+    if (!a.startsWith('-')) return false;
+    const name = a.includes('=') ? a.split('=')[0] : a;
+    return !KNOWN_FLAGS.has(name);
+  });
+  if (unknownFlags.length > 0) {
+    console.warn(`\x1b[33m⚠ Unknown flag(s): ${unknownFlags.join(', ')}\x1b[0m`);
+  }
+
   if (!url) {
-    console.log('Usage: ai-ready-pw-codegen <URL> [options]');
-    console.log('');
-    console.log('Options:');
-    console.log('  --no-screenshots     Disable screenshots');
-    console.log('  --no-archive         Skip .zip creation');
-    console.log('  --no-console         Disable console log capture');
-    console.log('  --max-actions <N>    Stop after N actions');
-    console.log('  --output-dir <path>  Output directory (default: ./recordings)');
-    console.log('  --viewport-size=W,H  Viewport size (default: 1920,1080)');
-    console.log('  --jpeg [quality]     Screenshot quality for JPEG (default: 80); JPEG is the default format');
-    console.log('');
-    console.log('Example: npx ai-ready-pw-codegen https://example.com');
+    printUsage();
     process.exit(1);
   }
 
@@ -100,9 +133,11 @@ async function main() {
     finalized = true;
 
     setTimeout(() => {
-      console.error('\nForce exit: finalization timed out');
+      console.error(`\n⚠ Force exit: finalization timed out after ${FINALIZE_TIMEOUT_MS / 1000}s (output may be incomplete)`);
       process.exit(1);
     }, FINALIZE_TIMEOUT_MS).unref();
+
+    console.log('\n⏳ Finalizing...');
 
     try {
       const metadata = await recorder.finalize();
@@ -115,7 +150,7 @@ async function main() {
       }
       console.log('✨ Done! Send the archive to AI for analysis. 🤖');
     } catch (err) {
-      console.error('Finalization error:', err);
+      console.error(`⚠ Finalization error: ${err instanceof Error ? err.message : err}`);
     }
 
     try { await browser.close(); } catch {}

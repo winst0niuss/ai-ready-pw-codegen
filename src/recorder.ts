@@ -11,9 +11,11 @@ function formatActionLine(
   index: number,
   actionData: CodegenActionData,
   target: TargetSnapshot | null,
-  failed: boolean
+  failed: boolean,
+  maxActions?: number
 ): string {
   const num = String(index).padStart(3, '0');
+  const indexPart = maxActions ? `${num}/${String(maxActions).padStart(3, '0')}` : num;
   const type = actionData.action.name.padEnd(10);
 
   let description = '';
@@ -43,7 +45,7 @@ function formatActionLine(
 
   const warn = failed ? '  \x1b[33m⚠ capture failed\x1b[0m' : '';
   const color = failed ? '\x1b[33m' : '\x1b[32m';
-  return `${color}[${num}]\x1b[0m ${type} → ${description}${warn}`;
+  return `${color}[${indexPart}]\x1b[0m ${type} → ${description}${warn}`;
 }
 
 const QUEUE_DRAIN_TIMEOUT_MS = 5000;
@@ -322,7 +324,7 @@ export class Recorder {
     // Human-readable progress line
     // Never write \n immediately — commit the previous line only when a new action starts.
     // This allows overwriting the line on actionUpdated, including the first character of a fill.
-    const line = formatActionLine(index, data, targetResult?.target ?? null, hasFailed);
+    const line = formatActionLine(index, data, targetResult?.target ?? null, hasFailed, this.options.maxActions);
     if (isUpdate) {
       process.stdout.write(`\x1b[2K\r${line}`);
     } else {
@@ -335,6 +337,11 @@ export class Recorder {
 
     // Stop on max-actions
     if (this.options.maxActions && this.actionIndex >= this.options.maxActions) {
+      if (this.progressLineActive) {
+        process.stdout.write('\n');
+        this.progressLineActive = false;
+      }
+      console.log(`⏹  Limit reached: ${this.options.maxActions} actions recorded. Stopping...`);
       this.onMaxActionsReached?.();
     }
   }
