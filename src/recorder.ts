@@ -348,10 +348,14 @@ export class Recorder {
 
   async finalize(): Promise<SessionMetadata> {
     // Wait for queue to drain, but no longer than timeout
+    let queueDrained = false;
     await Promise.race([
-      this.actionQueue,
+      this.actionQueue.then(() => { queueDrained = true; }),
       new Promise((resolve) => setTimeout(resolve, QUEUE_DRAIN_TIMEOUT_MS)),
     ]);
+    if (!queueDrained) {
+      console.warn(`\n⚠ Action queue did not drain in ${QUEUE_DRAIN_TIMEOUT_MS / 1000}s — last action(s) may be missing from output`);
+    }
 
     // Flush the progress line if it was left without a trailing \n (e.g. last action was a fill)
     if (this.progressLineActive) {

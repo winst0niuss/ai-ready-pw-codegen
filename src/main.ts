@@ -81,7 +81,14 @@ async function main() {
   if (jpegIdx !== -1) {
     const maybeQuality = args[jpegIdx + 1];
     const q = parseInt(maybeQuality, 10);
-    screenshotQuality = (!isNaN(q) && q >= 1 && q <= 100) ? q : 80;
+    if (!isNaN(q) && q >= 1 && q <= 100) {
+      screenshotQuality = q;
+    } else {
+      if (!isNaN(q)) {
+        console.warn(`\x1b[33m⚠ --jpeg quality ${q} is out of range (1–100), using default 80\x1b[0m`);
+      }
+      screenshotQuality = 80;
+    }
   }
 
   let validatedUrl: string;
