@@ -26,17 +26,21 @@ npm run record -- <URL> [options]
 # Type check
 npx tsc --noEmit
 
-# Run unit tests
+# Run all unit tests (Vitest)
 npm test
+
+# Run a single test file
+npx vitest run src/__tests__/cli-parsers.test.ts
 
 # Run tests in watch mode
 npm run test:watch
 
+# Run tests with coverage
+npm run test:coverage
+
 # Build to dist/
 npm run build
 ```
-
-No tests or linter configured.
 
 ## Architecture
 
@@ -68,6 +72,7 @@ Playwright Codegen (built-in recorder)
 - **`src/snapshot/dom-cleaner.ts`** — Runs in browser via `page.evaluate()`: clones full page DOM from body, strips non-test attributes, max depth 30, max text 200 chars
 - **`src/snapshot/accessibility.ts`** — `page.accessibility.snapshot()` with fallback to `ariaSnapshot()`
 - **`src/snapshot/target-element.ts`** — Runs in browser via `elementHandle.evaluate()`: captures target element snapshot (tag, ARIA role, accessible name, state, bounding box, ancestors, computed style) + builds selector candidates (testId, role+name, label, placeholder, text, CSS, XPath)
+- **`src/utils/cli-parsers.ts`** — `parseAndValidateUrl` (protocol detection logic) + `parseViewportSize` (validates `W,H` format, range 1–7680). Extracted for unit-testability.
 - **`src/utils/archiver.ts`** — Creates `.zip` archive via `archiver` npm package (cross-platform, pure JS)
 - **`src/utils/analysis-prompt.ts`** — Generates `SESSION.md` with session metadata
 - **`src/utils/fs-helpers.ts`** — Async `ensureDir`, `writeScreenshot`, `generateOutputDir`
@@ -82,6 +87,7 @@ Playwright Codegen (built-in recorder)
 - **Finalization safety**: 5s timeout on action queue drain + 10s absolute timeout in `main.ts` to prevent zombie processes. Shutdown triggers: context close, page close, browser disconnect, SIGINT, SIGTERM.
 - **`@ts-expect-error` for internal APIs**: Used to suppress TS errors on `_enableRecorder` and other underscore-prefixed Playwright internals.
 - **Non-blocking captures**: Screenshot/snapshot failures don't block action recording.
+- **Tests**: Vitest (not Jest). Test files live in `src/__tests__/`. Environment is `node`. Cover pure utility functions only — recorder/main require a live Playwright context, so they're not unit-tested.
 
 ### Output Format
 
