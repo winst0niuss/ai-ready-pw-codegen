@@ -21,7 +21,7 @@ npm run record -- <URL> [options]
 #   --max-actions <N>    Stop after N actions
 #   --output-dir <path>  Output directory (default: ./recordings)
 #   --viewport-size=W,H  Viewport size (default: 1920,1080)
-#   --jpeg [quality]     Save screenshots as JPEG instead of PNG (default quality: 80)
+#   --jpeg [quality]     Override JPEG quality (JPEG is the default format, quality 80)
 
 # Type check
 npx tsc --noEmit
@@ -30,7 +30,9 @@ npx tsc --noEmit
 npm test
 
 # Run a single test file
-npx vitest run src/__tests__/cli-parsers.test.ts
+npx vitest run src/__tests__/cli-parsers.test.ts   # URL/viewport parsing
+npx vitest run src/__tests__/analysis-prompt.test.ts  # SESSION.md generation
+npx vitest run src/__tests__/dom-cleaner.test.ts      # DOM cleaner (runs in jsdom)
 
 # Run tests in watch mode
 npm run test:watch
@@ -75,7 +77,7 @@ Playwright Codegen (built-in recorder)
 - **`src/utils/cli-parsers.ts`** — `parseAndValidateUrl` (protocol detection logic) + `parseViewportSize` (validates `W,H` format, range 1–7680). Extracted for unit-testability.
 - **`src/utils/archiver.ts`** — Creates `.zip` archive via `archiver` npm package (cross-platform, pure JS)
 - **`src/utils/analysis-prompt.ts`** — Generates `SESSION.md` with session metadata
-- **`src/utils/fs-helpers.ts`** — Async `ensureDir`, `writeScreenshot`, `generateOutputDir`
+- **`src/utils/fs-helpers.ts`** — Async `ensureDir`, `writeScreenshot`, `generateOutputDir`; `copyDocsToOutput` copies `docs/*.md` into the recording dir at finalization
 
 ### Key Patterns
 
@@ -87,7 +89,7 @@ Playwright Codegen (built-in recorder)
 - **Finalization safety**: 5s timeout on action queue drain + 10s absolute timeout in `main.ts` to prevent zombie processes. Shutdown triggers: context close, page close, browser disconnect, SIGINT, SIGTERM.
 - **`@ts-expect-error` for internal APIs**: Used to suppress TS errors on `_enableRecorder` and other underscore-prefixed Playwright internals.
 - **Non-blocking captures**: Screenshot/snapshot failures don't block action recording.
-- **Tests**: Vitest (not Jest). Test files live in `src/__tests__/`. Environment is `node`. Cover pure utility functions only — recorder/main require a live Playwright context, so they're not unit-tested.
+- **Tests**: Vitest (not Jest). Test files live in `src/__tests__/`. Default environment is `node`. Add `// @vitest-environment jsdom` at the top of files that test browser-API code (e.g. `dom-cleaner.test.ts`). Cover pure utility functions only — recorder/main require a live Playwright context, so they're not unit-tested.
 
 ### Output Format
 
