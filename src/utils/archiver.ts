@@ -11,8 +11,13 @@ export function createArchive(outputDir: string): Promise<string> {
     const output = fs.createWriteStream(archivePath);
     const archive = archiver('zip', { zlib: { level: 6 } });
 
+    output.on('error', reject);
     output.on('close', () => {
-      fs.rmSync(outputDir, { recursive: true, force: true });
+      try {
+        fs.rmSync(outputDir, { recursive: true, force: true });
+      } catch (err) {
+        console.warn(`⚠ Could not delete recording directory: ${err instanceof Error ? err.message : err}`);
+      }
       resolve(archivePath);
     });
     archive.on('error', reject);
