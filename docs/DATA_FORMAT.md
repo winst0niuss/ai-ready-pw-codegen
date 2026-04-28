@@ -39,6 +39,7 @@ Each line is a JSON object — one user action with full page context:
 | `accessibilityTree` | Full page accessibility tree at action time |
 | `screenshotFile` | Relative path to screenshot (or `null`) |
 | `consoleLogs` | Browser console messages since previous action (optional) |
+| `networkRequests` | XHR/fetch requests since previous action: `url`, `method`, `status`, `duration`, `requestBody`, `responseBody` (optional) |
 
 ## snapshots.jsonl
 

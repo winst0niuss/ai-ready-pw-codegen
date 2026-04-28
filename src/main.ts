@@ -11,7 +11,7 @@ import { parseAndValidateUrl, parseViewportSize } from './utils/cli-parsers';
 const FINALIZE_TIMEOUT_MS = 10000;
 
 const KNOWN_FLAGS = new Set([
-  '--no-screenshots', '--no-archive', '--no-console',
+  '--no-screenshots', '--no-archive', '--no-console', '--no-network',
   '--max-actions', '--output-dir', '--viewport-size', '--jpeg',
   '--help', '--version', '-h', '-v',
 ]);
@@ -23,6 +23,7 @@ function printUsage() {
   console.log('  --no-screenshots     Disable screenshots');
   console.log('  --no-archive         Skip .zip creation');
   console.log('  --no-console         Disable console log capture');
+  console.log('  --no-network         Disable XHR/fetch network capture');
   console.log('  --max-actions <N>    Stop after N actions');
   console.log('  --output-dir <path>  Output directory (default: ./recordings)');
   console.log('  --viewport-size=W,H  Viewport size (default: 1920,1080)');
@@ -52,6 +53,7 @@ async function main() {
   const noScreenshots = args.includes('--no-screenshots');
   const noArchive = args.includes('--no-archive');
   const noConsole = args.includes('--no-console');
+  const noNetwork = args.includes('--no-network');
   const outputBase = getArgValue(args, '--output-dir') || './recordings';
   const maxActionsRaw = getArgValue(args, '--max-actions');
   const maxActions = maxActionsRaw ? parseInt(maxActionsRaw, 10) : undefined;
@@ -116,6 +118,7 @@ async function main() {
     noArchive,
     maxActions,
     captureConsole: !noConsole,
+    captureNetwork: !noNetwork,
     ...(screenshotQuality !== undefined && { screenshotQuality }),
   };
 
@@ -130,6 +133,15 @@ async function main() {
     viewport: options.viewport,
   });
   const page = await context.newPage();
+
+  if (typeof (context as any)._enableRecorder !== 'function') {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const pwVersion = (require('playwright/package.json') as { version: string }).version;
+    console.error(`❌ Playwright internal API _enableRecorder is not available (detected version: ${pwVersion}).`);
+    console.error('   This tool requires Playwright >=1.50.0 with the internal recorder API.');
+    await browser.close();
+    process.exit(1);
+  }
 
   const recorder = new Recorder(context, page, validatedUrl, options, needsProtocolFallback);
 

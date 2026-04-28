@@ -1,7 +1,7 @@
-import type { Page, BrowserContext, ConsoleMessage, Frame } from 'playwright';
+import type { Page, BrowserContext, ConsoleMessage, Frame, Request as PWRequest } from 'playwright';
 import fs from 'fs';
 import path from 'path';
-import { CodegenActionData, ConsoleLogEntry, FrameContext, RecordedAction, SessionMetadata, RecorderOptions, TargetSnapshot } from './types';
+import { CodegenActionData, ConsoleLogEntry, FrameContext, NetworkRequest, RecordedAction, SessionMetadata, RecorderOptions, TargetSnapshot } from './types';
 import { getDomCleanerScript } from './snapshot/dom-cleaner';
 import { captureAccessibilityTree } from './snapshot/accessibility';
 import { captureTargetElement } from './snapshot/target-element';
@@ -49,6 +49,7 @@ function formatActionLine(
 }
 
 const QUEUE_DRAIN_TIMEOUT_MS = 5000;
+const NETWORK_MAX_BODY_BYTES = 10 * 1024;
 
 export class Recorder {
   private context: BrowserContext;
@@ -66,6 +67,10 @@ export class Recorder {
   private snapshotsLines: string[] = [];
   // Console logs accumulated between actions
   private pendingConsoleLogs: ConsoleLogEntry[] = [];
+  // Network requests accumulated between actions
+  private pendingNetworkPromises: Array<Promise<NetworkRequest | null>> = [];
+  // Tracks request start time + post body by request object identity
+  private requestDataMap = new Map<PWRequest, { startTime: number; timestamp: string; postData?: string }>();
   // Callback to stop on max-actions
   private onMaxActionsReached?: () => void;
   private needsProtocolFallback: boolean;
@@ -98,6 +103,64 @@ export class Recorder {
           text: error.message,
           timestamp: new Date().toISOString(),
         });
+      });
+    }
+
+    // Subscribe to XHR/fetch network requests
+    if (this.options.captureNetwork !== false) {
+      this.page.on('request', (request: PWRequest) => {
+        const type = request.resourceType();
+        if (type !== 'xhr' && type !== 'fetch') return;
+        this.requestDataMap.set(request, {
+          startTime: Date.now(),
+          timestamp: new Date().toISOString(),
+          postData: request.postData() ?? undefined,
+        });
+      });
+
+      this.page.on('response', (response) => {
+        const request = response.request();
+        const type = request.resourceType();
+        if (type !== 'xhr' && type !== 'fetch') return;
+
+        const reqData = this.requestDataMap.get(request);
+        this.requestDataMap.delete(request);
+
+        const startTime = reqData?.startTime ?? Date.now();
+        const timestamp = reqData?.timestamp ?? new Date().toISOString();
+
+        let requestBody: unknown;
+        if (reqData?.postData) {
+          try { requestBody = JSON.parse(reqData.postData); }
+          catch { requestBody = reqData.postData.slice(0, NETWORK_MAX_BODY_BYTES); }
+        }
+
+        const promise = (async (): Promise<NetworkRequest | null> => {
+          let responseBody: unknown;
+          try {
+            const contentType = response.headers()['content-type'] ?? '';
+            if (contentType.includes('json') || contentType.includes('text/')) {
+              const text = await response.text();
+              if (text.length <= NETWORK_MAX_BODY_BYTES) {
+                try { responseBody = JSON.parse(text); } catch { responseBody = text; }
+              } else {
+                responseBody = `[truncated: ${text.length} chars]`;
+              }
+            }
+          } catch { /* non-text or already consumed */ }
+
+          return {
+            url: request.url(),
+            method: request.method(),
+            status: response.status(),
+            duration: Date.now() - startTime,
+            timestamp,
+            ...(requestBody !== undefined && { requestBody }),
+            ...(responseBody !== undefined && { responseBody }),
+          };
+        })();
+
+        this.pendingNetworkPromises.push(promise);
       });
     }
 
@@ -195,6 +258,20 @@ export class Recorder {
     };
   }
 
+  private async drainNetworkRequests(): Promise<NetworkRequest[]> {
+    if (this.pendingNetworkPromises.length === 0) return [];
+    const promises = [...this.pendingNetworkPromises];
+    this.pendingNetworkPromises = [];
+    const withTimeout = promises.map((p) =>
+      Promise.race([
+        p.catch(() => null),
+        new Promise<null>((r) => setTimeout(() => r(null), 500)),
+      ])
+    );
+    const results = await Promise.all(withTimeout);
+    return results.filter((r): r is NetworkRequest => r !== null);
+  }
+
   private enqueueAction(page: Page, data: CodegenActionData, code: string, isUpdate: boolean): void {
     this.actionQueue = this.actionQueue.then(() =>
       this.processAction(page, data, code, isUpdate)
@@ -289,6 +366,9 @@ export class Recorder {
     const consoleLogs = this.pendingConsoleLogs.length > 0 ? [...this.pendingConsoleLogs] : undefined;
     this.pendingConsoleLogs = [];
 
+    // Drain network requests accumulated since previous action
+    const networkRequests = await this.drainNetworkRequests();
+
     const action: RecordedAction = {
       index,
       timestamp,
@@ -309,6 +389,7 @@ export class Recorder {
       accessibilityTree,
       screenshotFile,
       ...(consoleLogs && { consoleLogs }),
+      ...(networkRequests.length > 0 && { networkRequests }),
     };
 
     const snapshot = {

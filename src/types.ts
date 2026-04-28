@@ -87,6 +87,7 @@ export interface RecordedAction {
   accessibilityTree: unknown;
   screenshotFile: string | null;
   consoleLogs?: ConsoleLogEntry[];
+  networkRequests?: NetworkRequest[];
 }
 
 export interface DomSnapshot {
@@ -103,6 +104,16 @@ export interface SessionMetadata {
   viewportSize: { width: number; height: number };
 }
 
+export interface NetworkRequest {
+  url: string;
+  method: string;
+  status: number;
+  duration: number;
+  timestamp: string;
+  requestBody?: unknown;
+  responseBody?: unknown;
+}
+
 export interface RecorderOptions {
   outputDir: string;
   screenshots: boolean;
@@ -110,6 +121,7 @@ export interface RecorderOptions {
   noArchive?: boolean;
   maxActions?: number;
   captureConsole?: boolean;
+  captureNetwork?: boolean;
   screenshotQuality?: number; // 1-100, JPEG quality
 }
 
