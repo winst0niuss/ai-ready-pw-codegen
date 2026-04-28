@@ -66,6 +66,16 @@ export interface FrameContext {
   name?: string;
 }
 
+export interface NetworkRequest {
+  url: string;
+  method: string;
+  status: number;
+  duration: number;
+  timestamp: string;
+  requestBody?: unknown;
+  responseBody?: unknown;
+}
+
 export interface RecordedAction {
   index: number;
   timestamp: string;
@@ -102,16 +112,6 @@ export interface SessionMetadata {
   totalActions: number;
   browserType: string;
   viewportSize: { width: number; height: number };
-}
-
-export interface NetworkRequest {
-  url: string;
-  method: string;
-  status: number;
-  duration: number;
-  timestamp: string;
-  requestBody?: unknown;
-  responseBody?: unknown;
 }
 
 export interface RecorderOptions {

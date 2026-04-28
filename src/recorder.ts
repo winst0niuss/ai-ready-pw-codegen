@@ -49,7 +49,7 @@ function formatActionLine(
 }
 
 const QUEUE_DRAIN_TIMEOUT_MS = 5000;
-const NETWORK_MAX_BODY_BYTES = 10 * 1024;
+const NETWORK_MAX_BODY_CHARS = 10 * 1024;
 
 export class Recorder {
   private context: BrowserContext;
@@ -118,6 +118,10 @@ export class Recorder {
         });
       });
 
+      this.page.on('requestfailed', (request: PWRequest) => {
+        this.requestDataMap.delete(request);
+      });
+
       this.page.on('response', (response) => {
         const request = response.request();
         const type = request.resourceType();
@@ -132,7 +136,7 @@ export class Recorder {
         let requestBody: unknown;
         if (reqData?.postData) {
           try { requestBody = JSON.parse(reqData.postData); }
-          catch { requestBody = reqData.postData.slice(0, NETWORK_MAX_BODY_BYTES); }
+          catch { requestBody = reqData.postData.slice(0, NETWORK_MAX_BODY_CHARS); }
         }
 
         const promise = (async (): Promise<NetworkRequest | null> => {
@@ -141,7 +145,7 @@ export class Recorder {
             const contentType = response.headers()['content-type'] ?? '';
             if (contentType.includes('json') || contentType.includes('text/')) {
               const text = await response.text();
-              if (text.length <= NETWORK_MAX_BODY_BYTES) {
+              if (text.length <= NETWORK_MAX_BODY_CHARS) {
                 try { responseBody = JSON.parse(text); } catch { responseBody = text; }
               } else {
                 responseBody = `[truncated: ${text.length} chars]`;
