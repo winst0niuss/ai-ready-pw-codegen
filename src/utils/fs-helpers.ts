@@ -20,9 +20,22 @@ export function copyDocsToOutput(outputDir: string): void {
 }
 
 export async function generateOutputDir(baseDir: string): Promise<string> {
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const dirName = `test-${timestamp}`;
-  const fullPath = path.join(baseDir, dirName);
-  await ensureDir(path.join(fullPath, 'screenshots'));
-  return fullPath;
+  await ensureDir(baseDir);
+
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const suffix = Math.random().toString(36).slice(2, 8);
+    const dirName = `test-${timestamp}-${suffix}`;
+    const fullPath = path.join(baseDir, dirName);
+
+    try {
+      await fs.promises.mkdir(fullPath, { recursive: false });
+      await fs.promises.mkdir(path.join(fullPath, 'screenshots'), { recursive: false });
+      return fullPath;
+    } catch (err: any) {
+      if (err?.code !== 'EEXIST') throw err;
+    }
+  }
+
+  throw new Error(`Could not create unique output directory in ${baseDir}`);
 }

@@ -1,20 +1,15 @@
 #!/usr/bin/env node
 import { chromium } from 'playwright';
+import fs from 'fs';
 import path from 'path';
 import { Recorder } from './recorder';
 import { generateOutputDir, copyDocsToOutput } from './utils/fs-helpers';
 import { createArchive } from './utils/archiver';
 import { writeAnalysisPrompt } from './utils/analysis-prompt';
 import { RecorderOptions } from './types';
-import { parseAndValidateUrl, parseViewportSize } from './utils/cli-parsers';
+import { parseAndValidateUrl, parseCliArgs } from './utils/cli-parsers';
 
 const FINALIZE_TIMEOUT_MS = 10000;
-
-const KNOWN_FLAGS = new Set([
-  '--no-screenshots', '--no-archive', '--no-console', '--no-network',
-  '--max-actions', '--output-dir', '--viewport-size', '--jpeg',
-  '--help', '--version', '-h', '-v',
-]);
 
 function printUsage() {
   console.log('Usage: ai-ready-pw-codegen <URL> [options]');
@@ -49,77 +44,42 @@ async function main() {
     process.exit(0);
   }
 
-  const url = args.find((a) => !a.startsWith('-'));
-  const noScreenshots = args.includes('--no-screenshots');
-  const noArchive = args.includes('--no-archive');
-  const noConsole = args.includes('--no-console');
-  const noNetwork = args.includes('--no-network');
-  const outputBase = getArgValue(args, '--output-dir') || './recordings';
-  const maxActionsRaw = getArgValue(args, '--max-actions');
-  const maxActions = maxActionsRaw ? parseInt(maxActionsRaw, 10) : undefined;
-
-  if (maxActions !== undefined && (isNaN(maxActions) || maxActions <= 0)) {
-    console.error(`Invalid --max-actions: ${maxActionsRaw} (expected positive number)`);
+  let parsedArgs: ReturnType<typeof parseCliArgs>;
+  try {
+    parsedArgs = parseCliArgs(args);
+  } catch (err: any) {
+    console.error(err.message);
     process.exit(1);
   }
 
-  const unknownFlags = args.filter((a) => {
-    if (!a.startsWith('-')) return false;
-    const name = a.includes('=') ? a.split('=')[0] : a;
-    return !KNOWN_FLAGS.has(name);
-  });
-  if (unknownFlags.length > 0) {
-    console.warn(`\x1b[33m⚠ Unknown flag(s): ${unknownFlags.join(', ')}\x1b[0m`);
+  if (parsedArgs.unknownFlags.length > 0) {
+    console.warn(`\x1b[33m⚠ Unknown flag(s): ${parsedArgs.unknownFlags.join(', ')}\x1b[0m`);
   }
 
-  if (!url) {
+  if (!parsedArgs.url) {
     printUsage();
     process.exit(1);
-  }
-
-  // Parse --jpeg [quality]
-  let screenshotQuality: number | undefined;
-  const jpegIdx = args.indexOf('--jpeg');
-  if (jpegIdx !== -1) {
-    const maybeQuality = args[jpegIdx + 1];
-    const q = parseInt(maybeQuality, 10);
-    if (!isNaN(q) && q >= 1 && q <= 100) {
-      screenshotQuality = q;
-    } else {
-      if (!isNaN(q)) {
-        console.warn(`\x1b[33m⚠ --jpeg quality ${q} is out of range (1–100), using default 80\x1b[0m`);
-      }
-      screenshotQuality = 80;
-    }
   }
 
   let validatedUrl: string;
   let needsProtocolFallback: boolean;
   try {
-    ({ url: validatedUrl, needsProtocolFallback } = parseAndValidateUrl(url));
+    ({ url: validatedUrl, needsProtocolFallback } = parseAndValidateUrl(parsedArgs.url));
   } catch (err: any) {
     console.error(err.message);
     process.exit(1);
   }
 
-  let viewportSize: { width: number; height: number };
-  try {
-    viewportSize = parseViewportSize(getArgValue(args, '--viewport-size'));
-  } catch (err: any) {
-    console.error(err.message);
-    process.exit(1);
-  }
-
-  const outputDir = await generateOutputDir(path.resolve(outputBase));
+  const outputDir = await generateOutputDir(path.resolve(parsedArgs.outputBase));
   const options: RecorderOptions = {
     outputDir,
-    screenshots: !noScreenshots,
-    viewport: viewportSize!,
-    noArchive,
-    maxActions,
-    captureConsole: !noConsole,
-    captureNetwork: !noNetwork,
-    ...(screenshotQuality !== undefined && { screenshotQuality }),
+    screenshots: !parsedArgs.noScreenshots,
+    viewport: parsedArgs.viewportSize,
+    noArchive: parsedArgs.noArchive,
+    maxActions: parsedArgs.maxActions,
+    captureConsole: !parsedArgs.noConsole,
+    captureNetwork: !parsedArgs.noNetwork,
+    ...(parsedArgs.screenshotQuality !== undefined && { screenshotQuality: parsedArgs.screenshotQuality }),
   };
 
   console.log(`🎭 AI-Ready PW Codegen`);
@@ -163,8 +123,9 @@ async function main() {
       writeAnalysisPrompt(outputDir, metadata);
       copyDocsToOutput(outputDir);
 
-      if (!noArchive) {
+      if (!parsedArgs.noArchive) {
         const archivePath = await createArchive(outputDir);
+        await fs.promises.rm(outputDir, { recursive: true, force: true });
         console.log(`📦 Archive: ${archivePath}`);
       }
       console.log('✨ Done! Send the archive to AI for analysis. 🤖');
@@ -188,11 +149,6 @@ async function main() {
   process.on('SIGTERM', finalize);
 
   await recorder.start();
-}
-
-function getArgValue(args: string[], flag: string): string | undefined {
-  const idx = args.indexOf(flag);
-  return idx !== -1 && idx + 1 < args.length ? args[idx + 1] : undefined;
 }
 
 main().catch((err) => {

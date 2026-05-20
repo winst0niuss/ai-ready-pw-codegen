@@ -7,7 +7,7 @@ You are analyzing a recording from **AI-Ready PW Codegen** — an offline Playwr
 ## Archive Structure
 
 ```
-test-YYYY-MM-DDTHH-mm-ss/
+test-YYYY-MM-DDTHH-mm-ss-sssZ-xxxxxx/
 ├── SESSION.md              ← start here (session metadata)
 ├── DATA_FORMAT.md          ← data format reference (this file)
 ├── TEST_GUIDE.md           ← test generation guidelines

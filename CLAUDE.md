@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **AI-Ready PW Codegen** — offline Playwright recorder that captures user interactions with DOM snapshots, accessibility trees, and screenshots for later AI analysis (test generation, Page Object creation). Uses Playwright's built-in codegen as the UI/interaction layer. Acts as an "offline MCP Playwright" — record on a machine without AI access, then send the archive to Claude Code.
 
+## Project Structure & Module Organization
+
+Source files live in `src/`. `src/main.ts` is the CLI entry point, `src/recorder.ts` contains recorder orchestration, and `src/types.ts` defines shared interfaces. Browser snapshot logic is under `src/snapshot/`; reusable helpers are under `src/utils/`. Unit tests live in `src/__tests__/`. Public documentation copied into recording archives is in `docs/`, while compiled output goes to `dist/`. Generated recordings belong in `recordings/` and should not be committed.
+
 ## Commands
 
 ```bash
@@ -18,6 +22,7 @@ npm run record -- <URL> [options]
 #   --no-screenshots     Disable screenshots
 #   --no-archive         Skip .zip creation
 #   --no-console         Disable console log capture
+#   --no-network         Disable XHR/fetch network capture
 #   --max-actions <N>    Stop after N actions
 #   --output-dir <path>  Output directory (default: ./recordings)
 #   --viewport-size=W,H  Viewport size (default: 1920,1080)
@@ -43,6 +48,18 @@ npm run test:coverage
 # Build to dist/
 npm run build
 ```
+
+## Coding Style & Naming Conventions
+
+Use strict TypeScript targeting ES2022 and CommonJS. Prefer small modules organized by responsibility: CLI parsing in `utils`, browser evaluation code in `snapshot`, and recorder flow in `recorder.ts`. Use camelCase for functions and variables, PascalCase for exported types/interfaces, and kebab-case test files such as `cli-parsers.test.ts`. Preserve existing async/await patterns and graceful fallbacks for non-critical capture failures. Use `@ts-expect-error` only for documented Playwright internal APIs such as `_enableRecorder`.
+
+## Testing Guidelines
+
+Tests use Vitest, not Jest. Test files are discovered by `src/**/__tests__/**/*.test.ts`. The default test environment is `node`; add `// @vitest-environment jsdom` for DOM/browser API tests such as `dom-cleaner.test.ts`. Focus unit tests on pure utilities and snapshot helpers. Recorder and CLI changes often require manual verification with a live Playwright browser in addition to unit tests.
+
+## Commit & Pull Request Guidelines
+
+Git history follows Conventional Commit-style prefixes: `feat:`, `fix:`, `docs:`, and `chore:`. Keep commit subjects specific, for example `fix: handle write stream error in archiver`. Pull requests should describe the behavior change, list verification commands, link related issues, and include screenshots or sample recording output when user-visible recorder behavior changes.
 
 ## Architecture
 
@@ -85,6 +102,7 @@ Playwright Codegen (built-in recorder)
 - **Frame resolution for iframe actions**: `recorder.ts::resolveFrame` walks `CodegenActionData.frame.framePath` via `locator(sel).elementHandle().contentFrame()` for each level, returning the target `Frame`. `captureTargetElement` and the DOM cleaner then run in that frame's context. On any failure — graceful fallback to `page`. Accessibility tree is always captured from `page` (Playwright `Frame` has no `.accessibility` API).
 - **DOM cleaner runs in-browser**: `dom-cleaner.ts` exports a function passed to `page.evaluate()`. Whitelists test/semantic attributes, strips scripts/styles, max depth 30, max text 200 chars.
 - **Console log capture**: Subscribes to `page.on('console')` and `page.on('pageerror')`, accumulates logs between actions, attaches them to the next `RecordedAction.consoleLogs`.
+- **Network capture**: Subscribes to XHR/fetch responses, stores small text/JSON request and response bodies, and attaches completed requests to the next `RecordedAction.networkRequests`.
 - **Console progress**: Each action prints a human-readable line `[NNN] <type> → <description>` via `formatActionLine()` in `recorder.ts`. Green = success, yellow = capture failed. Description is derived from `target.role`/`target.accessibleName` when available, fallback to selector or URL.
 - **Finalization safety**: 5s timeout on action queue drain + 10s absolute timeout in `main.ts` to prevent zombie processes. Shutdown triggers: context close, page close, browser disconnect, SIGINT, SIGTERM.
 - **`@ts-expect-error` for internal APIs**: Used to suppress TS errors on `_enableRecorder` and other underscore-prefixed Playwright internals.
@@ -94,7 +112,7 @@ Playwright Codegen (built-in recorder)
 ### Output Format
 
 ```
-recordings/test-YYYY-MM-DDTHH-mm-ss/
+recordings/test-YYYY-MM-DDTHH-mm-ss-sssZ-xxxxxx/
 ├── SESSION.md              # session metadata (entry point)
 ├── DATA_FORMAT.md          # data format reference (from docs/)
 ├── TEST_GUIDE.md           # test generation guidelines (from docs/)
@@ -107,4 +125,4 @@ recordings/test-YYYY-MM-DDTHH-mm-ss/
 
 Action types are determined by Playwright codegen: `navigate`, `click`, `fill`, `press`, `select`, `check`, `uncheck`, `hover`, etc. Screenshots are **JPEG by default** (quality 80); pass `--jpeg [quality]` to override quality.
 
-Each action line in `actions.jsonl` includes `action.codegenCode` (generated Playwright code), `action.position`/`modifiers`/`button`/`clickCount` (full codegen data), `target` (element snapshot with state, ARIA, bounding box), `selectors` (testId/role/css/xpath candidates), `frame` (iframe context — present only for actions inside iframes), `accessibilityTree`, `screenshotFile`, and optional `consoleLogs`. DOM snapshots are in separate `snapshots.jsonl` to save context window.
+Each action line in `actions.jsonl` includes `action.codegenCode` (generated Playwright code), `action.position`/`modifiers`/`button`/`clickCount` (full codegen data), `target` (element snapshot with state, ARIA, bounding box), `selectors` (testId/role/css/xpath candidates), `frame` (iframe context — present only for actions inside iframes), `accessibilityTree`, `screenshotFile`, and optional `consoleLogs`/`networkRequests`. DOM snapshots are in separate `snapshots.jsonl` to save context window.
