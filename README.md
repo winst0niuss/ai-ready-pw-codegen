@@ -6,7 +6,7 @@
 
 <br>
 
-**AI-Ready PW Codegen** is an offline Playwright recorder. It captures every user action alongside its **accessibility tree**, **cleaned DOM**, **screenshots**, and **console logs**, then packages everything into a structured archive for AI-powered test generation.
+**AI-Ready PW Codegen** is an offline Playwright recorder. It captures every user action alongside its **accessibility tree**, **cleaned DOM**, **screenshots**, **console logs**, and **XHR/fetch requests**, then packages everything into a structured archive for AI-powered test generation.
 
 <br>
 
@@ -60,6 +60,7 @@ What gets captured per action:
 - Cleaned DOM (test-relevant attributes only, max depth 30)
 - Screenshot
 - Console logs (errors, warnings)
+- XHR/fetch network requests and small text/JSON bodies
 - Full codegen data (selector, position, modifiers, generated code)
 
 ## CLI Options
@@ -70,6 +71,7 @@ ai-ready-pw-codegen <URL> [options]
   --no-screenshots     Disable screenshots
   --no-archive         Skip .zip creation
   --no-console         Disable console log capture
+  --no-network         Disable XHR/fetch network capture
   --max-actions <N>    Stop after N actions
   --output-dir <path>  Output directory (default: ./recordings)
   --viewport-size=W,H  Viewport size (default: 1920,1080)
@@ -81,7 +83,7 @@ URL protocol is auto-detected: tries `http://` first, falls back to `https://`. 
 ## Output
 
 ```
-recordings/test-YYYY-MM-DDTHH-mm-ss/
+recordings/test-YYYY-MM-DDTHH-mm-ss-sssZ-xxxxxx/
 ├── SESSION.md              # AI reads this first — session metadata
 ├── DATA_FORMAT.md          # Data format reference
 ├── TEST_GUIDE.md           # Test generation guidelines
@@ -126,6 +128,16 @@ recordings/test-YYYY-MM-DDTHH-mm-ss/
   "screenshotFile": "screenshots/002-click.jpg",
   "consoleLogs": [
     { "level": "error", "text": "Failed to fetch /api/data", "timestamp": "..." }
+  ],
+  "networkRequests": [
+    {
+      "url": "https://your-app.com/api/data",
+      "method": "GET",
+      "status": 200,
+      "duration": 120,
+      "timestamp": "...",
+      "responseBody": { "ok": true }
+    }
   ]
 }
 ```
@@ -156,7 +168,7 @@ See [docs/DATA_FORMAT.md](docs/DATA_FORMAT.md) and [docs/TEST_GUIDE.md](docs/TES
 
 1. Launches headed Chromium with Playwright's built-in codegen recorder UI
 2. Hooks into codegen events (`actionAdded`/`actionUpdated`) via internal `_enableRecorder` API
-3. On each action: captures accessibility tree + cleaned DOM + screenshot + console logs + target element snapshot with selector candidates
+3. On each action: captures accessibility tree + cleaned DOM + screenshot + console logs + XHR/fetch requests + target element snapshot with selector candidates
 4. Walks `framePath` for actions inside iframes — target element, DOM snapshot and selectors are captured from the correct frame
 5. On browser close: writes JSONL files, generates `SESSION.md`, archives into `.zip`
 
