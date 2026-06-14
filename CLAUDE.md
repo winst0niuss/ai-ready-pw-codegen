@@ -38,6 +38,7 @@ npm test
 npx vitest run src/__tests__/cli-parsers.test.ts   # URL/viewport parsing
 npx vitest run src/__tests__/analysis-prompt.test.ts  # SESSION.md generation
 npx vitest run src/__tests__/dom-cleaner.test.ts      # DOM cleaner (runs in jsdom)
+npx vitest run src/__tests__/fs-helpers.test.ts       # ensureDir/writeScreenshot/generateOutputDir
 
 # Run tests in watch mode
 npm run test:watch
