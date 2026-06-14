@@ -2,7 +2,11 @@ import fs from 'fs';
 import path from 'path';
 import { SessionMetadata } from '../types';
 
-export function writeAnalysisPrompt(outputDir: string, metadata: SessionMetadata): void {
+export function writeAnalysisPrompt(outputDir: string, metadata: SessionMetadata, hasHar = false): void {
+  const screenshotsConnector = hasHar ? '├──' : '└──';
+  const harLine = hasHar
+    ? '└── network.har             ← full HAR (all resources) for manual analysis — do NOT load into context\n'
+    : '';
   const prompt = `# AI-Ready PW Codegen Recording
 
 ## Session Info
@@ -21,8 +25,8 @@ export function writeAnalysisPrompt(outputDir: string, metadata: SessionMetadata
 ├── TEST_GUIDE.md           ← test generation guidelines
 ├── actions.jsonl            ← all actions, one JSON per line (start here)
 ├── snapshots.jsonl          ← cleaned DOM snapshots, one per line (read on demand)
-└── screenshots/             ← JPEG screenshots matching action index
-\`\`\`
+${screenshotsConnector} screenshots/             ← JPEG screenshots matching action index
+${harLine}\`\`\`
 
 ## Next Steps
 

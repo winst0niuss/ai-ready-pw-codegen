@@ -7,6 +7,7 @@ export interface ParsedCliArgs {
   noArchive: boolean;
   noConsole: boolean;
   noNetwork: boolean;
+  har: boolean;
   outputBase: string;
   maxActions?: number;
   viewportSize: { width: number; height: number };
@@ -59,6 +60,7 @@ export function parseCliArgs(args: string[]): ParsedCliArgs {
     noArchive: false,
     noConsole: false,
     noNetwork: false,
+    har: false,
   };
 
   const requireValue = (flag: string, value: string | undefined): string => {
@@ -106,6 +108,10 @@ export function parseCliArgs(args: string[]): ParsedCliArgs {
     }
     if (arg === '--no-network') {
       booleans.noNetwork = true;
+      continue;
+    }
+    if (arg === '--har') {
+      booleans.har = true;
       continue;
     }
 
@@ -159,6 +165,7 @@ export function parseCliArgs(args: string[]): ParsedCliArgs {
     noArchive: booleans.noArchive,
     noConsole: booleans.noConsole,
     noNetwork: booleans.noNetwork,
+    har: booleans.har,
     outputBase,
     maxActions,
     viewportSize: parseViewportSize(viewportRaw),

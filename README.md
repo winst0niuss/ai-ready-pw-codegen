@@ -72,6 +72,7 @@ ai-ready-pw-codegen <URL> [options]
   --no-archive         Skip .zip creation
   --no-console         Disable console log capture
   --no-network         Disable XHR/fetch network capture
+  --har                Also write a full network.har (all resources) for manual analysis
   --max-actions <N>    Stop after N actions
   --output-dir <path>  Output directory (default: ./recordings)
   --viewport-size=W,H  Viewport size (default: 1920,1080)

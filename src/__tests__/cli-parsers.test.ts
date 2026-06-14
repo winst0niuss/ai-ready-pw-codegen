@@ -124,4 +124,11 @@ describe('parseCliArgs', () => {
     expect(result.unknownFlags).toEqual(['--unknown']);
     expect(result.url).toBe('example.com');
   });
+
+  it('har is false by default and true with --har', () => {
+    expect(parseCliArgs(['example.com']).har).toBe(false);
+    const result = parseCliArgs(['--har', 'example.com']);
+    expect(result.har).toBe(true);
+    expect(result.url).toBe('example.com');
+  });
 });

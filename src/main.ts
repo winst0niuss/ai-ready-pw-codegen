@@ -19,6 +19,7 @@ function printUsage() {
   console.log('  --no-archive         Skip .zip creation');
   console.log('  --no-console         Disable console log capture');
   console.log('  --no-network         Disable XHR/fetch network capture');
+  console.log('  --har                Also write a full network.har (all resources, for manual analysis)');
   console.log('  --max-actions <N>    Stop after N actions');
   console.log('  --output-dir <path>  Output directory (default: ./recordings)');
   console.log('  --viewport-size=W,H  Viewport size (default: 1920,1080)');
@@ -79,8 +80,12 @@ async function main() {
     maxActions: parsedArgs.maxActions,
     captureConsole: !parsedArgs.noConsole,
     captureNetwork: !parsedArgs.noNetwork,
+    har: parsedArgs.har,
     ...(parsedArgs.screenshotQuality !== undefined && { screenshotQuality: parsedArgs.screenshotQuality }),
   };
+
+  // HAR is written by Playwright at context.close(); path lives inside the recording dir
+  const harPath = path.join(outputDir, 'network.har');
 
   console.log(`🎭 AI-Ready PW Codegen`);
   console.log(`🌐 URL: ${validatedUrl}`);
@@ -91,6 +96,7 @@ async function main() {
   const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext({
     viewport: options.viewport,
+    ...(options.har && { recordHar: { path: harPath, mode: 'full', content: 'embed' } }),
   });
   const page = await context.newPage();
 
@@ -120,8 +126,14 @@ async function main() {
 
     try {
       const metadata = await recorder.finalize();
-      writeAnalysisPrompt(outputDir, metadata);
+      writeAnalysisPrompt(outputDir, metadata, options.har);
       copyDocsToOutput(outputDir);
+
+      // Closing the context flushes the HAR to disk; must happen before archiving.
+      // Idempotent — a no-op if the context already closed (e.g. browser closed by user).
+      if (options.har) {
+        try { await context.close(); } catch {}
+      }
 
       if (!parsedArgs.noArchive) {
         const archivePath = await createArchive(outputDir);

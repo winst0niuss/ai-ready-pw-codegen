@@ -123,6 +123,7 @@ export interface RecorderOptions {
   captureConsole?: boolean;
   captureNetwork?: boolean;
   screenshotQuality?: number; // 1-100, JPEG quality
+  har?: boolean; // write full network.har via Playwright recordHar
 }
 
 // Data from Playwright codegen eventSink

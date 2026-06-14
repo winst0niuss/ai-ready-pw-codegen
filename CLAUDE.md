@@ -23,6 +23,7 @@ npm run record -- <URL> [options]
 #   --no-archive         Skip .zip creation
 #   --no-console         Disable console log capture
 #   --no-network         Disable XHR/fetch network capture
+#   --har                Also write a full network.har (all resources) for manual analysis
 #   --max-actions <N>    Stop after N actions
 #   --output-dir <path>  Output directory (default: ./recordings)
 #   --viewport-size=W,H  Viewport size (default: 1920,1080)
@@ -103,7 +104,8 @@ Playwright Codegen (built-in recorder)
 - **Frame resolution for iframe actions**: `recorder.ts::resolveFrame` walks `CodegenActionData.frame.framePath` via `locator(sel).elementHandle().contentFrame()` for each level, returning the target `Frame`. `captureTargetElement` and the DOM cleaner then run in that frame's context. On any failure — graceful fallback to `page`. Accessibility tree is always captured from `page` (Playwright `Frame` has no `.accessibility` API).
 - **DOM cleaner runs in-browser**: `dom-cleaner.ts` exports a function passed to `page.evaluate()`. Whitelists test/semantic attributes, strips scripts/styles, max depth 30, max text 200 chars.
 - **Console log capture**: Subscribes to `page.on('console')` and `page.on('pageerror')`, accumulates logs between actions, attaches them to the next `RecordedAction.consoleLogs`.
-- **Network capture**: Subscribes to XHR/fetch responses, stores small text/JSON request and response bodies, and attaches completed requests to the next `RecordedAction.networkRequests`.
+- **Network capture**: Subscribes to XHR/fetch responses, stores small text/JSON request and response bodies, and attaches completed requests to the next `RecordedAction.networkRequests`. This per-action capture is the default and is optimized for AI context (only XHR/fetch, bodies capped at 10 KB).
+- **`--har` (full HAR)**: Optional, off by default. Enables Playwright's native `recordHar` on the context (`main.ts`), writing a standard `network.har` (all resources, full headers/bodies) into the recording dir for manual analysis — not meant to be loaded into AI context. HAR is flushed only on `context.close()`, so `main.ts::finalize` explicitly closes the context (idempotent) before archiving. Independent of the per-action capture above.
 - **Console progress**: Each action prints a human-readable line `[NNN] <type> → <description>` via `formatActionLine()` in `recorder.ts`. Green = success, yellow = capture failed. Description is derived from `target.role`/`target.accessibleName` when available, fallback to selector or URL.
 - **Finalization safety**: 5s timeout on action queue drain + 10s absolute timeout in `main.ts` to prevent zombie processes. Shutdown triggers: context close, page close, browser disconnect, SIGINT, SIGTERM.
 - **`@ts-expect-error` for internal APIs**: Used to suppress TS errors on `_enableRecorder` and other underscore-prefixed Playwright internals.
