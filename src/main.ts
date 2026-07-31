@@ -136,9 +136,19 @@ async function main() {
       }
 
       if (!parsedArgs.noArchive) {
-        const archivePath = await createArchive(outputDir);
-        await fs.promises.rm(outputDir, { recursive: true, force: true });
+        const { archivePath, bytes, warnings } = await createArchive(outputDir);
         console.log(`📦 Archive: ${archivePath}`);
+
+        // Исходники удаляем, только если архив заведомо целый: пустой zip или
+        // пропущенные файлы означают, что удаление уничтожит единственную копию
+        if (bytes > 0 && warnings.length === 0) {
+          await fs.promises.rm(outputDir, { recursive: true, force: true });
+        } else {
+          for (const warning of warnings) {
+            console.warn(`⚠ Archive warning: ${warning}`);
+          }
+          console.warn(`⚠ Archive may be incomplete — source directory kept: ${outputDir}`);
+        }
       }
       console.log('✨ Done! Send the archive to AI for analysis. 🤖');
     } catch (err) {

@@ -2,17 +2,36 @@ import archiver from 'archiver';
 import fs from 'fs';
 import path from 'path';
 
-export function createArchive(outputDir: string): Promise<string> {
+export interface ArchiveResult {
+  archivePath: string;
+  /** Байт записано в архив; 0 означает, что архив пустой и исходники удалять нельзя */
+  bytes: number;
+  /** Пропущенные файлы (ENOENT/EACCES) — архив создан, но неполный */
+  warnings: string[];
+}
+
+export function createArchive(outputDir: string): Promise<ArchiveResult> {
   const dirName = path.basename(outputDir);
   const parentDir = path.dirname(outputDir);
   const { stream, archivePath } = openUniqueArchive(parentDir, dirName);
 
   return new Promise((resolve, reject) => {
     const archive = archiver('zip', { zlib: { level: 6 } });
+    const warnings: string[] = [];
 
-    stream.on('error', reject);
-    stream.on('close', () => resolve(archivePath));
-    archive.on('error', reject);
+    const fail = (err: Error) => {
+      // Огрызок архива не оставляем — его слишком легко принять за готовый
+      try { fs.unlinkSync(archivePath); } catch {}
+      reject(err);
+    };
+
+    stream.on('error', fail);
+    stream.on('close', () => resolve({ archivePath, bytes: archive.pointer(), warnings }));
+
+    // warning — это пропущенный файл, а не фатальная ошибка: архив соберётся,
+    // но будет неполным. Копим и отдаём наверх, чтобы вызывающий решил, что делать
+    archive.on('warning', (err: Error) => warnings.push(err.message));
+    archive.on('error', fail);
 
     archive.pipe(stream);
     archive.directory(outputDir, dirName);

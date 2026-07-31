@@ -1,11 +1,12 @@
 import type { Page, BrowserContext, ConsoleMessage, Frame, Request as PWRequest } from 'playwright';
-import fs from 'fs';
 import path from 'path';
 import { CodegenActionData, ConsoleLogEntry, FrameContext, NetworkRequest, RecordedAction, SessionMetadata, RecorderOptions, TargetSnapshot } from './types';
 import { getDomCleanerScript } from './snapshot/dom-cleaner';
 import { captureAccessibilityTree } from './snapshot/accessibility';
 import { captureTargetElement } from './snapshot/target-element';
 import { writeScreenshot } from './utils/fs-helpers';
+import { JsonlWriter } from './utils/jsonl-writer';
+import { withTimeout } from './utils/with-timeout';
 
 function formatActionLine(
   index: number,
@@ -50,6 +51,9 @@ function formatActionLine(
 
 const QUEUE_DRAIN_TIMEOUT_MS = 5000;
 const NETWORK_MAX_BODY_CHARS = 10 * 1024;
+// Бюджет на один захват. Зависшая страница не должна вставлять очередь: лучше
+// действие без снимка, чем потерянные из-за истёкшего QUEUE_DRAIN_TIMEOUT_MS действия
+const CAPTURE_TIMEOUT_MS = 3000;
 
 export class Recorder {
   private context: BrowserContext;
@@ -62,9 +66,9 @@ export class Recorder {
   private actionQueue: Promise<void> = Promise.resolve();
   // For overwriting on actionUpdated (codegen merges keystrokes into fill)
   private lastActionIndex = 0;
-  // JSONL lines stored for possible overwrite on actionUpdated
-  private actionsLines: string[] = [];
-  private snapshotsLines: string[] = [];
+  // JSONL written incrementally; only the last line is buffered for actionUpdated overwrite
+  private actionsWriter: JsonlWriter;
+  private snapshotsWriter: JsonlWriter;
   // Console logs accumulated between actions
   private pendingConsoleLogs: ConsoleLogEntry[] = [];
   // Network requests accumulated between actions
@@ -85,6 +89,15 @@ export class Recorder {
     this.startedAt = new Date().toISOString();
     this.startUrl = startUrl;
     this.needsProtocolFallback = needsProtocolFallback;
+    this.actionsWriter = new JsonlWriter(path.join(this.outputDir, 'actions.jsonl'));
+    this.snapshotsWriter = new JsonlWriter(path.join(this.outputDir, 'snapshots.jsonl'));
+  }
+
+  /** Terminates the pending progress line so other output starts on a fresh line. */
+  private endProgressLine(): void {
+    if (!this.progressLineActive) return;
+    process.stdout.write('\n');
+    this.progressLineActive = false;
   }
 
   async start(): Promise<void> {
@@ -277,8 +290,14 @@ export class Recorder {
   }
 
   private enqueueAction(page: Page, data: CodegenActionData, code: string, isUpdate: boolean): void {
+    // .catch обязателен: без него первая же ошибка превращает actionQueue в
+    // отклонённый промис, и все последующие действия молча не обрабатываются
     this.actionQueue = this.actionQueue.then(() =>
-      this.processAction(page, data, code, isUpdate)
+      this.processAction(page, data, code, isUpdate).catch((err) => {
+        this.endProgressLine();
+        const message = err instanceof Error ? err.message : String(err);
+        console.warn(`\x1b[33m⚠ Action #${this.actionIndex} not recorded: ${message}\x1b[0m`);
+      })
     );
   }
 
@@ -320,13 +339,21 @@ export class Recorder {
     }
 
     // Resolve frame (if the action happened inside an iframe)
-    const { frameContext, executionContext } = await this.resolveFrame(page, data);
+    const { frameContext, executionContext } = await withTimeout(
+      this.resolveFrame(page, data),
+      CAPTURE_TIMEOUT_MS,
+      'frame resolution',
+    ).catch(() => ({ frameContext: undefined, executionContext: page as Page | Frame }));
 
     // Capture target + selectors (skipped for actions without a selector, e.g. navigate)
     let targetResult: Awaited<ReturnType<typeof captureTargetElement>> | null = null;
     if (selector) {
       try {
-        targetResult = await captureTargetElement(executionContext, selector);
+        targetResult = await withTimeout(
+          captureTargetElement(executionContext, selector),
+          CAPTURE_TIMEOUT_MS,
+          'target element',
+        );
       } catch {
         targetResult = null;
       }
@@ -339,7 +366,7 @@ export class Recorder {
 
     try {
       // a11y snapshot is taken from page (Playwright Frame has no accessibility API)
-      accessibilityTree = await captureAccessibilityTree(page);
+      accessibilityTree = await withTimeout(captureAccessibilityTree(page), CAPTURE_TIMEOUT_MS, 'accessibility snapshot');
     } catch {
       accessibilityTree = { error: 'failed to capture' };
       hasFailed = true;
@@ -347,7 +374,11 @@ export class Recorder {
 
     try {
       // DOM cleaner runs inside the resolved frame's context
-      cleanedDom = await executionContext.evaluate(getDomCleanerScript());
+      cleanedDom = await withTimeout(
+        executionContext.evaluate(getDomCleanerScript()),
+        CAPTURE_TIMEOUT_MS,
+        'DOM snapshot',
+      );
     } catch {
       cleanedDom = '<error>failed to capture DOM</error>';
       hasFailed = true;
@@ -358,7 +389,17 @@ export class Recorder {
     if (this.options.screenshots) {
       try {
         const screenshotPath = path.join(this.outputDir, 'screenshots', `${paddedIndex}-${actionName}.jpg`);
-        const buffer = await page.screenshot({ fullPage: false, type: 'jpeg', quality: this.options.screenshotQuality ?? 80 });
+        // Playwright по умолчанию ждёт 30 с — это дольше, чем весь бюджет финализации
+        const buffer = await withTimeout(
+          page.screenshot({
+            fullPage: false,
+            type: 'jpeg',
+            quality: this.options.screenshotQuality ?? 80,
+            timeout: CAPTURE_TIMEOUT_MS,
+          }),
+          CAPTURE_TIMEOUT_MS + 500,
+          'screenshot',
+        );
         await writeScreenshot(screenshotPath, buffer);
         screenshotFile = `screenshots/${paddedIndex}-${actionName}.jpg`;
       } catch {
@@ -401,10 +442,10 @@ export class Recorder {
       cleanedDom,
     };
 
-    // On actionUpdated overwrite the last line (index - 1 since array is 0-based)
-    const lineIdx = index - 1;
-    this.actionsLines[lineIdx] = JSON.stringify(action);
-    this.snapshotsLines[lineIdx] = JSON.stringify(snapshot);
+    // Written straight to disk; the writer keeps only this line buffered so that
+    // a following actionUpdated can still overwrite it
+    await this.actionsWriter.write(index, JSON.stringify(action));
+    await this.snapshotsWriter.write(index, JSON.stringify(snapshot));
 
     // Human-readable progress line
     // Never write \n immediately — commit the previous line only when a new action starts.
@@ -422,10 +463,7 @@ export class Recorder {
 
     // Stop on max-actions
     if (this.options.maxActions && this.actionIndex >= this.options.maxActions) {
-      if (this.progressLineActive) {
-        process.stdout.write('\n');
-        this.progressLineActive = false;
-      }
+      this.endProgressLine();
       console.log(`⏹  Limit reached: ${this.options.maxActions} actions recorded. Stopping...`);
       this.onMaxActionsReached?.();
     }
@@ -443,17 +481,18 @@ export class Recorder {
     }
 
     // Flush the progress line if it was left without a trailing \n (e.g. last action was a fill)
-    if (this.progressLineActive) {
-      process.stdout.write('\n');
-      this.progressLineActive = false;
+    this.endProgressLine();
+
+    // Flush the buffered last line of each JSONL file (earlier lines are already on disk)
+    try {
+      const { staleUpdates } = await this.actionsWriter.close();
+      await this.snapshotsWriter.close();
+      if (staleUpdates > 0) {
+        console.warn(`⚠ ${staleUpdates} late action update(s) arrived after the line was written — ignored`);
+      }
+    } catch (err) {
+      console.warn(`⚠ Failed to flush output files: ${err instanceof Error ? err.message : err}`);
     }
-
-    // Write JSONL files
-    const actionsPath = path.join(this.outputDir, 'actions.jsonl');
-    fs.writeFileSync(actionsPath, this.actionsLines.join('\n') + '\n', 'utf-8');
-
-    const snapshotsPath = path.join(this.outputDir, 'snapshots.jsonl');
-    fs.writeFileSync(snapshotsPath, this.snapshotsLines.join('\n') + '\n', 'utf-8');
 
     const metadata: SessionMetadata = {
       startUrl: this.startUrl,

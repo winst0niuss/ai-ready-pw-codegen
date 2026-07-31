@@ -28,6 +28,8 @@ npm run record -- <URL> [options]
 #   --output-dir <path>  Output directory (default: ./recordings)
 #   --viewport-size=W,H  Viewport size (default: 1920,1080)
 #   --jpeg [quality]     Override JPEG quality (JPEG is the default format, quality 80)
+#   --help, -h           Show help
+#   --version, -v        Show version
 
 # Type check
 npx tsc --noEmit
@@ -62,6 +64,10 @@ Tests use Vitest, not Jest. Test files are discovered by `src/**/__tests__/**/*.
 ## Commit & Pull Request Guidelines
 
 Git history follows Conventional Commit-style prefixes: `feat:`, `fix:`, `docs:`, and `chore:`. Keep commit subjects specific, for example `fix: handle write stream error in archiver`. Pull requests should describe the behavior change, list verification commands, link related issues, and include screenshots or sample recording output when user-visible recorder behavior changes.
+
+CI (`.github/workflows/ci.yml`) runs on push/PR to `main` with Node 20: `npm ci` → `npx tsc --noEmit` → `npm test`. Run both locally before pushing.
+
+The package is published to npm as `ai-ready-pw-codegen` with `bin` → `dist/main.js`; `prepublishOnly` runs `npm run build`. User-visible changes need a `version` bump in `package.json` (history shows a separate `chore: bump version to X.Y.Z` commit).
 
 ## Architecture
 
