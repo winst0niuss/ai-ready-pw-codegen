@@ -1,182 +1,196 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 850" width="1600" height="850" font-family="Inter, system-ui, -apple-system, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
   <defs>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
-      <feOffset dx="0" dy="4" result="offsetblur"/>
-      <feComponentTransfer>
-        <feFuncA type="linear" slope="0.3"/>
-      </feComponentTransfer>
-      <feMerge>
-        <feMergeNode/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1020"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="hero" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#818cf8"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.28"/>
     </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#64748b"/>
+    </marker>
+    <marker id="arrowBlue" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#38bdf8"/>
+    </marker>
+    <style>
+      .title{font:800 38px Inter,system-ui,sans-serif;fill:#f8fafc}
+      .subtitle{font:500 17px Inter,system-ui,sans-serif;fill:#94a3b8}
+      .stage{font:800 14px Inter,system-ui,sans-serif;letter-spacing:2px}
+      .cardTitle{font:700 20px Inter,system-ui,sans-serif;fill:#f8fafc}
+      .body{font:500 15px Inter,system-ui,sans-serif;fill:#94a3b8}
+      .mono{font:600 14px ui-monospace,SFMono-Regular,Menlo,monospace;fill:#cbd5e1}
+      .small{font:500 13px Inter,system-ui,sans-serif;fill:#64748b}
+      .chip{font:700 12px Inter,system-ui,sans-serif;letter-spacing:1px}
+    </style>
   </defs>
 
   <!-- Background -->
-  <rect width="1600" height="850" fill="#030712"/>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <circle cx="1350" cy="100" r="260" fill="#6366f1" opacity="0.06"/>
+  <circle cx="160" cy="780" r="280" fill="#38bdf8" opacity="0.04"/>
 
-  <!-- Vertical Column Guides (Subtle) -->
-  <line x1="533" y1="80" x2="533" y2="780" stroke="#1f2937" stroke-width="2" stroke-dasharray="8,8"/>
-  <line x1="1066" y1="80" x2="1066" y2="780" stroke="#1f2937" stroke-width="2" stroke-dasharray="8,8"/>
+  <!-- Header -->
+  <text x="80" y="72" class="title">AI-Ready PW Codegen</text>
+  <text x="80" y="103" class="subtitle">Offline Playwright recording → structured evidence → AI-ready test generation</text>
+  <rect x="1270" y="55" width="250" height="38" rx="19" fill="#0f172a" stroke="#334155"/>
+  <circle cx="1295" cy="74" r="6" fill="#34d399"/>
+  <text x="1312" y="79" class="chip" fill="#86efac">NO AI CONNECTION REQUIRED</text>
 
-  <!-- ============================================== -->
-  <!-- STAGE 1 — RECORD (Left Column)                 -->
-  <!-- ============================================== -->
-  <g transform="translate(76, 60)">
-    <text x="190" y="40" font-size="48" font-weight="900" fill="#f9fafb" text-anchor="middle">1. RECORD</text>
-    <rect x="115" y="60" width="150" height="32" rx="16" fill="#0ea5e9" fill-opacity="0.1" stroke="#0ea5e9" stroke-width="1"/>
-    <text x="190" y="81" font-size="15" fill="#38bdf8" text-anchor="middle" font-weight="700" letter-spacing="2">CLI TOOL</text>
+  <!-- Main flow line -->
+  <line x1="465" y1="445" x2="535" y2="445" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="1015" y1="445" x2="1085" y2="445" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
 
-    <!-- Terminal -->
-    <g transform="translate(0, 120)" filter="url(#shadow)">
-      <rect width="380" height="150" rx="12" fill="#111827" stroke="#374151" stroke-width="1"/>
-      <circle cx="20" cy="20" r="5" fill="#f87171"/>
-      <circle cx="36" cy="20" r="5" fill="#fbbf24"/>
-      <circle cx="52" cy="20" r="5" fill="#34d399"/>
-      <text x="20" y="75" font-family="ui-monospace, monospace" font-size="18" fill="#f9fafb">$ ai-ready-pw-codegen</text>
-      <text x="20" y="110" font-family="ui-monospace, monospace" font-size="18" fill="#34d399">  https://your-app.com</text>
-      <rect x="238" y="93" width="10" height="20" fill="#34d399" fill-opacity="0.6">
-        <animate attributeName="opacity" values="1;0;1" dur="1s" repeatCount="indefinite" />
-      </rect>
+  <!-- ================= RECORD ================= -->
+  <g transform="translate(80,155)">
+    <text x="0" y="0" class="stage" fill="#38bdf8">01 · RECORD</text>
+    <text x="0" y="32" class="cardTitle">Real user interaction</text>
+    <text x="0" y="57" class="body">Chromium + Playwright Codegen</text>
+
+    <!-- Browser card -->
+    <g transform="translate(0,85)" filter="url(#shadow)">
+      <rect width="385" height="430" rx="18" fill="#0f172a" stroke="#334155"/>
+      <rect width="385" height="48" rx="18" fill="#172033"/>
+      <rect y="32" width="385" height="16" fill="#172033"/>
+      <circle cx="23" cy="24" r="5" fill="#f87171"/>
+      <circle cx="40" cy="24" r="5" fill="#fbbf24"/>
+      <circle cx="57" cy="24" r="5" fill="#34d399"/>
+      <rect x="82" y="13" width="220" height="22" rx="11" fill="#0b1220"/>
+      <text x="192" y="28" text-anchor="middle" class="small">your-app.com</text>
+      <rect x="318" y="11" width="52" height="25" rx="12" fill="#7f1d1d"/>
+      <circle cx="331" cy="23.5" r="4" fill="#fca5a5"/>
+      <text x="351" y="28" text-anchor="middle" font-size="11" font-weight="800" fill="#fecaca">REC</text>
+
+      <text x="28" y="92" class="small">LOGIN</text>
+      <rect x="28" y="112" width="329" height="48" rx="9" fill="#111827" stroke="#334155"/>
+      <text x="44" y="142" class="body">Email</text>
+      <rect x="28" y="175" width="329" height="48" rx="9" fill="#111827" stroke="#334155"/>
+      <text x="44" y="205" class="body">Password</text>
+      <rect x="28" y="242" width="329" height="52" rx="9" fill="url(#hero)"/>
+      <text x="192" y="275" text-anchor="middle" font-size="17" font-weight="800" fill="#fff">Sign in</text>
+
+      <rect x="28" y="326" width="329" height="66" rx="10" fill="#111827" stroke="#1e293b"/>
+      <circle cx="52" cy="350" r="6" fill="#38bdf8"/>
+      <text x="68" y="355" class="mono">actionAdded</text>
+      <text x="68" y="378" class="small">recorded locally</text>
     </g>
 
-    <!-- Arrow -->
-    <path d="M190,285 L190,325" stroke="#374151" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
-    
-    <!-- Browser -->
-    <g transform="translate(0, 360)" filter="url(#shadow)">
-      <rect width="380" height="260" rx="12" fill="#1f2937" stroke="#374151" stroke-width="1"/>
-      <rect width="380" height="40" rx="12" fill="#111827"/>
-      <rect y="30" width="380" height="10" fill="#111827"/>
-      <circle cx="20" cy="20" r="5" fill="#f87171"/>
-      <circle cx="36" cy="20" r="5" fill="#fbbf24"/>
-      <circle cx="52" cy="20" r="5" fill="#34d399"/>
-      <rect x="80" y="10" width="220" height="20" rx="10" fill="#1f2937"/>
-      <text x="190" y="24" font-size="14" fill="#9ca3af" text-anchor="middle">your-app.com</text>
-      
-      <rect x="310" y="10" width="65" height="22" rx="11" fill="#ef4444"/>
-      <text x="345" y="26" font-size="14" fill="#ffffff" font-weight="bold" text-anchor="middle">REC</text>
-      <circle cx="322" cy="21" r="3" fill="#ffffff">
-        <animate attributeName="opacity" values="1;0.2;1" dur="1.5s" repeatCount="indefinite" />
-      </circle>
-
-      <rect x="40" y="80" width="300" height="35" rx="6" fill="#111827" stroke="#374151"/>
-      <text x="50" y="102" font-size="15" fill="#4b5563">Email</text>
-      <rect x="40" y="130" width="300" height="35" rx="6" fill="#111827" stroke="#374151"/>
-      <text x="50" y="152" font-size="15" fill="#4b5563">Password</text>
-      <rect x="40" y="185" width="300" height="40" rx="6" fill="#34d399"/>
-      <text x="190" y="212" font-size="18" fill="#064e3b" font-weight="bold" text-anchor="middle">Sign in</text>
-      <g transform="translate(205, 205)">
-        <path d="M0,0 L0,18 L5,14 L8,21 L11,20 L8,13 L13,13 Z" fill="#ffffff" stroke="#000000" stroke-width="1.2"/>
-      </g>
-    </g>
-    
-    <text x="190" y="670" font-size="18" fill="#6b7280" text-anchor="middle" font-style="italic">Chromium + Playwright Codegen</text>
+    <rect x="0" y="540" width="385" height="56" rx="12" fill="#082f49" stroke="#075985"/>
+    <text x="20" y="564" class="chip" fill="#7dd3fc">OFFLINE FIRST</text>
+    <text x="20" y="584" class="small" fill="#bae6fd">Everything is captured on the recording machine.</text>
   </g>
 
-  <!-- ============================================== -->
-  <!-- STAGE 2 — CAPTURE (Middle Column)              -->
-  <!-- ============================================== -->
-  <g transform="translate(600, 60)">
-    <text x="215" y="40" font-size="48" font-weight="900" fill="#10b981" text-anchor="middle">2. CAPTURE</text>
-    <text x="215" y="75" font-size="18" fill="#6b7280" text-anchor="middle">Hooked into actionAdded events</text>
+  <!-- ================= CAPTURE ================= -->
+  <g transform="translate(535,155)">
+    <text x="0" y="0" class="stage" fill="#34d399">02 · CAPTURE</text>
+    <text x="0" y="32" class="cardTitle">Context around every action</text>
+    <text x="0" y="57" class="body">_enableRecorder hooks the Playwright recorder</text>
 
-    <!-- Connectors (Straight and centered) -->
-    <g stroke="#10b981" stroke-width="1" stroke-dasharray="4,4">
-      <line x1="100" y1="180" x2="215" y2="330" /> <!-- Selectors -->
-      <line x1="330" y1="180" x2="215" y2="330" /> <!-- A11y Tree -->
-      <line x1="100" y1="480" x2="215" y2="330" /> <!-- Cleaned DOM -->
-      <line x1="330" y1="480" x2="215" y2="330" /> <!-- Artifacts -->
+    <!-- Central action -->
+    <g transform="translate(45,92)" filter="url(#shadow)">
+      <rect width="365" height="92" rx="16" fill="#052e2b" stroke="#10b981" stroke-width="2"/>
+      <text x="24" y="35" class="mono" fill="#a7f3d0">ACTION 002 · CLICK</text>
+      <text x="24" y="63" font-size="18" font-weight="700" fill="#ecfdf5">button "Sign in"</text>
     </g>
 
-    <!-- Central Hub -->
-    <g transform="translate(85, 290)" filter="url(#shadow)">
-      <rect width="260" height="80" rx="16" fill="#064e3b" stroke="#10b981" stroke-width="2"/>
-      <text x="130" y="35" font-family="ui-monospace, monospace" font-size="18" fill="#d1fae5" font-weight="bold" text-anchor="middle">_enableRecorder</text>
-      <text x="130" y="62" font-family="ui-monospace, monospace" font-size="18" fill="#34d399" text-anchor="middle">↳ Capture Queue</text>
+    <!-- Four capture cards -->
+    <g transform="translate(0,220)" filter="url(#shadow)">
+      <rect width="205" height="125" rx="14" fill="#0f172a" stroke="#334155"/>
+      <circle cx="28" cy="30" r="14" fill="#0c4a6e"/><text x="28" y="35" text-anchor="middle" font-size="16">⌖</text>
+      <text x="54" y="35" class="cardTitle" font-size="17">Selectors</text>
+      <text x="18" y="67" class="body">testId · role · label</text>
+      <text x="18" y="91" class="body">text · CSS · XPath</text>
+      <text x="18" y="113" class="small">robust locator candidates</text>
+    </g>
+    <g transform="translate(225,220)" filter="url(#shadow)">
+      <rect width="205" height="125" rx="14" fill="#0f172a" stroke="#334155"/>
+      <circle cx="28" cy="30" r="14" fill="#14532d"/><text x="28" y="35" text-anchor="middle" font-size="16">◎</text>
+      <text x="54" y="35" class="cardTitle" font-size="17">Target</text>
+      <text x="18" y="67" class="body">role · name · state</text>
+      <text x="18" y="91" class="body">attributes · bounds</text>
+      <text x="18" y="113" class="small">exact element context</text>
+    </g>
+    <g transform="translate(0,360)" filter="url(#shadow)">
+      <rect width="205" height="125" rx="14" fill="#0f172a" stroke="#334155"/>
+      <circle cx="28" cy="30" r="14" fill="#4c1d95"/><text x="28" y="35" text-anchor="middle" font-size="16">◇</text>
+      <text x="54" y="35" class="cardTitle" font-size="17">Page context</text>
+      <text x="18" y="67" class="body">Accessibility tree</text>
+      <text x="18" y="91" class="body">Cleaned DOM · iframe path</text>
+      <text x="18" y="113" class="small">structure when needed</text>
+    </g>
+    <g transform="translate(225,360)" filter="url(#shadow)">
+      <rect width="205" height="125" rx="14" fill="#0f172a" stroke="#334155"/>
+      <circle cx="28" cy="30" r="14" fill="#713f12"/><text x="28" y="35" text-anchor="middle" font-size="16">◌</text>
+      <text x="54" y="35" class="cardTitle" font-size="17">Evidence</text>
+      <text x="18" y="67" class="body">Screenshot · console</text>
+      <text x="18" y="91" class="body">XHR/fetch · response body</text>
+      <text x="18" y="113" class="small">debugging signals</text>
     </g>
 
-    <!-- Satellite Cards -->
-    <g transform="translate(0, 100)" filter="url(#shadow)">
-      <rect width="200" height="95" rx="12" fill="#111827" stroke="#374151" stroke-width="1"/>
-      <text x="15" y="35" font-size="20" fill="#f9fafb" font-weight="bold">🎯 Selectors</text>
-      <text x="15" y="68" font-size="16" fill="#9ca3af">testId, roles, labels</text>
-    </g>
-
-    <g transform="translate(230, 100)" filter="url(#shadow)">
-      <rect width="200" height="95" rx="12" fill="#111827" stroke="#374151" stroke-width="1"/>
-      <text x="15" y="35" font-size="20" fill="#f9fafb" font-weight="bold">🌳 A11y Tree</text>
-      <text x="15" y="68" font-size="16" fill="#9ca3af">Computed roles</text>
-    </g>
-
-    <g transform="translate(0, 480)" filter="url(#shadow)">
-      <rect width="200" height="95" rx="12" fill="#111827" stroke="#374151" stroke-width="1"/>
-      <text x="15" y="35" font-size="20" fill="#f9fafb" font-weight="bold">🧩 Cleaned DOM</text>
-      <text x="15" y="68" font-size="16" fill="#9ca3af">Stripped metadata</text>
-    </g>
-
-    <g transform="translate(230, 480)" filter="url(#shadow)">
-      <rect width="200" height="95" rx="12" fill="#111827" stroke="#374151" stroke-width="1"/>
-      <text x="15" y="35" font-size="20" fill="#f9fafb" font-weight="bold">📸 Artifacts</text>
-      <text x="15" y="68" font-size="16" fill="#9ca3af">Screenshots &amp; Logs</text>
-    </g>
-
-    <text x="215" y="670" font-size="18" fill="#6b7280" text-anchor="middle" font-style="italic">Non-blocking parallel metadata collection</text>
+    <text x="215" y="525" text-anchor="middle" class="small">Written immediately · crash-safe per action</text>
   </g>
 
-  <!-- ============================================== -->
-  <!-- STAGE 3 — DELIVER (Right Column)               -->
-  <!-- ============================================== -->
-  <g transform="translate(1144, 60)">
-    <text x="190" y="40" font-size="48" font-weight="900" fill="#f87171" text-anchor="middle">3. DELIVER</text>
-    <rect x="85" y="60" width="210" height="32" rx="16" fill="#ef4444" fill-opacity="0.1" stroke="#ef4444" stroke-width="1"/>
-    <text x="190" y="81" font-size="15" fill="#f87171" text-anchor="middle" font-weight="700" letter-spacing="2">FINAL ARTIFACTS</text>
-    
-    <!-- Package -->
-    <g transform="translate(0, 120)" filter="url(#shadow)">
-      <rect width="380" height="240" rx="12" fill="#111827" stroke="#ef4444" stroke-width="1.5"/>
-      <rect width="380" height="45" rx="12" fill="#7f1d1d" fill-opacity="0.3"/>
-      <text x="20" y="30" font-size="20" fill="#fecaca" font-weight="bold">📦 session-archive.zip</text>
-      
-      <g transform="translate(20, 85)" font-family="ui-monospace, monospace" font-size="16" fill="#f9fafb">
-        <text y="0">📄 actions.jsonl</text>
-        <text y="35">📄 snapshots.jsonl</text>
-        <text y="70">📄 SESSION.md <tspan fill="#6b7280" font-size="14">(context)</tspan></text>
-        <text y="105">📄 TEST_GUIDE.md</text>
-        <text y="140">📁 screenshots/</text>
-      </g>
-    </g>
+  <!-- ================= PACKAGE ================= -->
+  <g transform="translate(1085,155)">
+    <text x="0" y="0" class="stage" fill="#a78bfa">03 · PACKAGE</text>
+    <text x="0" y="32" class="cardTitle">AI-ready recording archive</text>
+    <text x="0" y="57" class="body">Structured for efficient AI context usage</text>
 
-    <!-- Send to AI (Single Arrow) -->
-    <g transform="translate(0, 360)">
-      <text x="190" y="40" font-size="18" fill="#6b7280" text-anchor="middle" font-style="italic">Send to AI</text>
-      <path d="M190,55 L190,95" stroke="#374151" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
-    </g>
+    <g transform="translate(0,85)" filter="url(#shadow)">
+      <rect width="435" height="430" rx="18" fill="#0f172a" stroke="#4c1d95" stroke-width="1.5"/>
+      <rect width="435" height="62" rx="18" fill="#1e1b4b"/>
+      <rect y="44" width="435" height="18" fill="#1e1b4b"/>
+      <text x="25" y="39" font-size="20" font-weight="800" fill="#ddd6fe">📦 recording.zip</text>
+      <text x="25" y="94" class="small">AI reads in this order</text>
 
-    <!-- Code Result -->
-    <g transform="translate(0, 480)" filter="url(#shadow)">
-      <rect width="380" height="190" rx="12" fill="#020617" stroke="#10b981" stroke-width="1"/>
-      <text x="20" y="30" font-family="ui-monospace, monospace" font-size="18" fill="#34d399" font-weight="bold">login.spec.ts</text>
-      <line x1="0" y1="45" x2="380" y2="45" stroke="#1f2937" stroke-width="1"/>
-      <g transform="translate(20, 85)" font-family="ui-monospace, monospace" font-size="14" fill="#9ca3af">
-        <text y="0"><tspan fill="#38bdf8">test</tspan>(<tspan fill="#10b981">'login'</tspan>, <tspan fill="#fbbf24">async</tspan> ({ page }) => {</text>
-        <text y="25">  <tspan fill="#fbbf24">await</tspan> page.goto(<tspan fill="#10b981">'/'</tspan>);</text>
-        <text y="50">  <tspan fill="#fbbf24">await</tspan> page.getByRole(<tspan fill="#10b981">'button'</tspan>).click();</text>
-        <text y="75">});</text>
-      </g>
+      <rect x="22" y="112" width="391" height="54" rx="9" fill="#111827" stroke="#334155"/>
+      <text x="40" y="135" class="mono" fill="#c4b5fd">SESSION.md</text>
+      <text x="40" y="155" class="small">session overview + how to use the data</text>
+
+      <rect x="22" y="177" width="391" height="54" rx="9" fill="#111827" stroke="#334155"/>
+      <text x="40" y="200" class="mono" fill="#93c5fd">actions.jsonl</text>
+      <text x="40" y="220" class="small">primary timeline · one action per line</text>
+
+      <rect x="22" y="242" width="391" height="54" rx="9" fill="#111827" stroke="#334155"/>
+      <text x="40" y="265" class="mono" fill="#86efac">screenshots/</text>
+      <text x="40" y="285" class="small">visual evidence for selected actions</text>
+
+      <rect x="22" y="307" width="391" height="54" rx="9" fill="#111827" stroke="#334155"/>
+      <text x="40" y="330" class="mono" fill="#f9a8d4">snapshots.jsonl</text>
+      <text x="40" y="350" class="small">large DOM context · read on demand</text>
+
+      <rect x="22" y="372" width="391" height="34" rx="8" fill="#172033"/>
+      <text x="217" y="395" text-anchor="middle" class="small">+ TEST_GUIDE.md · DATA_FORMAT.md · network.har*</text>
     </g>
   </g>
 
-  <!-- Markers -->
-  <defs>
-    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#374151" />
-    </marker>
-    <marker id="arrowhead-amber" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#fbbf24" />
-    </marker>
-  </defs>
+  <!-- Handoff -->
+  <g transform="translate(80,760)">
+    <rect width="1440" height="82" rx="18" fill="#0f172a" stroke="#334155"/>
+    <rect x="22" y="18" width="42" height="42" rx="12" fill="url(#hero)"/>
+    <text x="43" y="47" text-anchor="middle" font-size="21">✦</text>
+    <text x="84" y="43" class="cardTitle">AI handoff</text>
+    <text x="84" y="64" class="body">Claude Code · Cursor · Gemini CLI · any model that can read the archive</text>
 
+    <line x1="670" y1="18" x2="670" y2="64" stroke="#334155"/>
+    <text x="710" y="42" class="mono" fill="#e2e8f0">archive → context → test</text>
+    <text x="710" y="63" class="small">Generate Playwright tests using real actions, locators and page evidence</text>
+
+    <rect x="1230" y="20" width="185" height="42" rx="21" fill="#052e16" stroke="#166534"/>
+    <circle cx="1252" cy="41" r="5" fill="#4ade80"/>
+    <text x="1270" y="46" class="chip" fill="#86efac">READY FOR AI</text>
+  </g>
+
+  <!-- Flow labels -->
+  <text x="500" y="431" text-anchor="middle" class="small">events</text>
+  <text x="1050" y="431" text-anchor="middle" class="small">archive</text>
+
+  <!-- Footer -->
+  <text x="80" y="875" class="small">* network.har is optional (--har) · screenshots, console and network capture can be disabled with CLI flags</text>
+  <text x="1520" y="875" text-anchor="end" class="small">Playwright 1.59.1</text>
 </svg>
