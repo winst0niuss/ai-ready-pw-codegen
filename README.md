@@ -90,10 +90,13 @@ recordings/test-YYYY-MM-DDTHH-mm-ss-sssZ-xxxxxx/
 ├── TEST_GUIDE.md           # Test generation guidelines
 ├── actions.jsonl           # One action per line — primary data
 ├── snapshots.jsonl         # Cleaned DOM per action — read on demand
-└── screenshots/
-    ├── 001-navigate.jpg    # JPEG by default (use --jpeg [quality] to tune, default quality: 80)
-    └── 002-click.jpg
+├── screenshots/
+│   ├── 001-navigate.jpg    # JPEG by default (use --jpeg [quality] to tune, default quality: 80)
+│   └── 002-click.jpg
+└── network.har             # Only with --har — full network dump for manual analysis
 ```
+
+Unless `--no-archive` is passed, this directory is zipped to `recordings/test-….zip` and then removed. If the archive turns out incomplete, the directory is kept instead — you never end up without a copy.
 
 ### actions.jsonl
 
@@ -171,7 +174,8 @@ See [docs/DATA_FORMAT.md](docs/DATA_FORMAT.md) and [docs/TEST_GUIDE.md](docs/TES
 2. Hooks into codegen events (`actionAdded`/`actionUpdated`) via internal `_enableRecorder` API
 3. On each action: captures accessibility tree + cleaned DOM + screenshot + console logs + XHR/fetch requests + target element snapshot with selector candidates
 4. Walks `framePath` for actions inside iframes — target element, DOM snapshot and selectors are captured from the correct frame
-5. On browser close: writes JSONL files, generates `SESSION.md`, archives into `.zip`
+5. Writes each action to `actions.jsonl`/`snapshots.jsonl` immediately — a crash costs at most the last action, not the session
+6. On browser close: generates `SESSION.md`, copies the docs and archives everything into `.zip`
 
 Uses Playwright internal API (underscore-prefixed). Playwright version pinned to 1.59.1.
 
@@ -183,6 +187,7 @@ cd ai-ready-pw-codegen
 npm install
 npm run build          # Build to dist/
 npx tsc --noEmit       # Type check
+npm test               # Unit tests (Vitest)
 npx ts-node src/main.ts https://example.com  # Run from source
 ```
 

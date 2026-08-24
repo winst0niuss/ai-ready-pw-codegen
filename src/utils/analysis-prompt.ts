@@ -23,8 +23,8 @@ export function writeAnalysisPrompt(outputDir: string, metadata: SessionMetadata
 ├── SESSION.md              ← you are here (session metadata)
 ├── DATA_FORMAT.md          ← data format reference
 ├── TEST_GUIDE.md           ← test generation guidelines
-├── actions.jsonl            ← all actions, one JSON per line (start here)
-├── snapshots.jsonl          ← cleaned DOM snapshots, one per line (read on demand)
+├── actions.jsonl           ← all actions, one JSON per line (start here)
+├── snapshots.jsonl         ← cleaned DOM snapshots, one per line (read on demand)
 ${screenshotsConnector} screenshots/             ← JPEG screenshots matching action index
 ${harLine}\`\`\`
 

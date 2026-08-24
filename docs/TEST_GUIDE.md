@@ -28,12 +28,30 @@ If the recording is part of an existing test system, don't write a "test in a va
 
 ## Selector Strategy
 
-Priority order:
+Every action already carries a `selectors` object with pre-computed candidates — pick from it instead of deriving locators from the DOM. Priority order:
 
-1. **`data-testid`** — always prefer: `page.getByTestId('submit-btn')`
-2. **Role + name** — from accessibility tree: `page.getByRole('button', { name: 'Submit' })`
-3. **Semantic locators** — `page.getByLabel('Email')`, `page.getByPlaceholder('...')`, `page.getByText('...')`
-4. **CSS selector** — last resort: `page.locator('[aria-label="Close"]')`
+| `selectors` field | Playwright code |
+|-------------------|-----------------|
+| `testId` | `page.getByTestId('submit-btn')` — always prefer |
+| `role` | `page.getByRole('button', { name: 'Submit' })` |
+| `label` / `placeholder` / `text` | `page.getByLabel('Email')`, `page.getByPlaceholder('...')`, `page.getByText('...')` |
+| `css` | `page.locator('[aria-label="Close"]')` — last resort |
+| `xpath` | avoid; use only when nothing else identifies the element |
+
+`selectors.codegen` is what Playwright's recorder produced — a working fallback, but usually less stable than the candidates above.
+
+If a candidate is not unique on the page, scope it via `target.ancestors` (e.g. `page.getByRole('form', { name: 'Checkout' }).getByRole('button', { name: 'Pay' })`) instead of falling back to XPath.
+
+## iframes
+
+If an action has a `frame` field, the element lives inside an iframe — wrap the locator in `frameLocator` for each entry of `frame.path`:
+
+```ts
+// frame: { path: ["iframe#checkout"], url: "https://pay.example.com/form" }
+await page.frameLocator('iframe#checkout').getByRole('button', { name: 'Pay' }).click();
+```
+
+Actions without a `frame` field belong to the top-level page.
 
 ## Action Mapping
 
@@ -80,4 +98,6 @@ test.describe('User flow: [describe based on actions]', () => {
 - Skip redundant SPA navigations that are side effects of clicks
 - Merge consecutive `fill` + `press(Enter)` into logical steps
 - Check `consoleLogs` for errors that might indicate test-relevant failures
+- Use `networkRequests` to make waits explicit instead of arbitrary timeouts: `await page.waitForResponse(r => r.url().includes('/api/data'))`. Response bodies also show what the app expects — useful for `page.route()` mocks
+- `target.state` tells you what to assert after an action (`checked`, `enabled`, `focused`); a `target.missing: true` means the element was not resolved at capture time — rely on the accessibility tree or DOM snapshot for that step
 - Check `SESSION.md` for viewport size — add `test.use({ viewport: {...} })` if non-default
