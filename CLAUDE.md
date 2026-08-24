@@ -42,6 +42,11 @@ npx vitest run src/__tests__/cli-parsers.test.ts   # URL/viewport parsing
 npx vitest run src/__tests__/analysis-prompt.test.ts  # SESSION.md generation
 npx vitest run src/__tests__/dom-cleaner.test.ts      # DOM cleaner (runs in jsdom)
 npx vitest run src/__tests__/fs-helpers.test.ts       # ensureDir/writeScreenshot/generateOutputDir
+npx vitest run src/__tests__/jsonl-writer.test.ts     # incremental JSONL write + actionUpdated overwrite
+npx vitest run src/__tests__/with-timeout.test.ts     # capture time budget
+
+# Run a single test by name
+npx vitest run -t "overwrites the buffered line for the same index"
 
 # Run tests in watch mode
 npm run test:watch
@@ -80,9 +85,10 @@ Playwright Codegen (built-in recorder)
   → eventSink.actionAdded(page, data, code)
   → eventSink.actionUpdated(page, data, code)
     → recorder.ts enqueueAction → processAction (sequential Promise queue)
-      → capture accessibility tree + cleaned DOM + screenshot + console logs
-      → store in memory arrays (for actionUpdated overwrite support)
-      → on finalize: write actions.jsonl + snapshots.jsonl to disk
+      → capture accessibility tree + cleaned DOM + screenshot + console logs + network
+      → JsonlWriter.write(index, line): previous lines already on disk,
+        only the last line stays buffered so actionUpdated can overwrite it
+      → on finalize: drain queue, flush last line, write SESSION.md, copy docs, archive
 ```
 
 **Dual `_enableRecorder` call**: First call opens the GUI inspector, second call (with `recorderMode: 'api'`) attaches the eventSink for programmatic access. Both coexist on the same context.
@@ -94,14 +100,16 @@ Playwright Codegen (built-in recorder)
 ### Key Files
 
 - **`src/main.ts`** — CLI entry point, URL validation with protocol fallback, launches Chromium, handles shutdown + archiving
-- **`src/recorder.ts`** — Core class: enables codegen via `_enableRecorder`, listens for `actionAdded`/`actionUpdated` events, captures snapshots and console logs. Stores actions in memory arrays, writes JSONL on finalize. Supports `max-actions` stop via `onStop()` callback
+- **`src/recorder.ts`** — Core class: enables codegen via `_enableRecorder`, listens for `actionAdded`/`actionUpdated` events, captures snapshots, console logs and network. Streams JSONL to disk through `JsonlWriter` (only the last line is buffered). Supports `max-actions` stop via `onStop()` callback
 - **`src/types.ts`** — All shared interfaces (`ConsoleLogEntry`, `RecordedAction`, `DomSnapshot`, `CodegenActionData`, `SessionMetadata`, `RecorderOptions`, `TargetSnapshot`, `SelectorCandidates`, `FrameContext`)
 - **`src/snapshot/dom-cleaner.ts`** — Runs in browser via `page.evaluate()`: clones full page DOM from body, strips non-test attributes, max depth 30, max text 200 chars
 - **`src/snapshot/accessibility.ts`** — `page.accessibility.snapshot()` with fallback to `ariaSnapshot()`
 - **`src/snapshot/target-element.ts`** — Runs in browser via `elementHandle.evaluate()`: captures target element snapshot (tag, ARIA role, accessible name, state, bounding box, ancestors, computed style) + builds selector candidates (testId, role+name, label, placeholder, text, CSS, XPath)
-- **`src/utils/cli-parsers.ts`** — `parseAndValidateUrl` (protocol detection logic) + `parseViewportSize` (validates `W,H` format, range 1–7680). Extracted for unit-testability.
-- **`src/utils/archiver.ts`** — Creates `.zip` archive via `archiver` npm package (cross-platform, pure JS)
-- **`src/utils/analysis-prompt.ts`** — Generates `SESSION.md` with session metadata
+- **`src/utils/cli-parsers.ts`** — `parseCliArgs` (all flags → `ParsedCliArgs`, collects `unknownFlags` for a warning instead of failing) + `parseAndValidateUrl` (protocol detection logic) + `parseViewportSize` (validates `W,H` format, range 1–7680). Extracted for unit-testability.
+- **`src/utils/jsonl-writer.ts`** — `JsonlWriter`: appends each JSONL line as it arrives, keeps only the last one in memory for `actionUpdated` overwrite, counts `staleUpdates` (updates that arrived after the line was already flushed). Always creates the file, even for an empty session.
+- **`src/utils/with-timeout.ts`** — `withTimeout` + `CaptureTimeoutError`: caps a single capture; the underlying Playwright promise is not cancellable, so its rejection is swallowed to avoid `unhandledRejection`.
+- **`src/utils/archiver.ts`** — Creates `.zip` archive via `archiver` npm package (cross-platform, pure JS). Returns `ArchiveResult { archivePath, bytes, warnings }` — `main.ts` deletes the source dir only when the archive is provably complete.
+- **`src/utils/analysis-prompt.ts`** — Generates `SESSION.md` with session metadata (`hasHar` flag mentions `network.har`)
 - **`src/utils/fs-helpers.ts`** — Async `ensureDir`, `writeScreenshot`, `generateOutputDir`; `copyDocsToOutput` copies `docs/*.md` into the recording dir at finalization
 
 ### Key Patterns
@@ -112,8 +120,12 @@ Playwright Codegen (built-in recorder)
 - **Console log capture**: Subscribes to `page.on('console')` and `page.on('pageerror')`, accumulates logs between actions, attaches them to the next `RecordedAction.consoleLogs`.
 - **Network capture**: Subscribes to XHR/fetch responses, stores small text/JSON request and response bodies, and attaches completed requests to the next `RecordedAction.networkRequests`. This per-action capture is the default and is optimized for AI context (only XHR/fetch, bodies capped at 10 KB).
 - **`--har` (full HAR)**: Optional, off by default. Enables Playwright's native `recordHar` on the context (`main.ts`), writing a standard `network.har` (all resources, full headers/bodies) into the recording dir for manual analysis — not meant to be loaded into AI context. HAR is flushed only on `context.close()`, so `main.ts::finalize` explicitly closes the context (idempotent) before archiving. Independent of the per-action capture above.
+- **Crash-resilient output**: JSONL is written incrementally (`JsonlWriter`), so a SIGKILL / browser crash / OOM costs at most the last action instead of the whole session. Consequence: an `actionUpdated` for an already-flushed line cannot be applied — it is counted and reported as a stale update on finalize.
+- **Per-capture time budget**: every capture (frame resolution, target element, a11y, DOM, screenshot) is wrapped in `withTimeout(..., CAPTURE_TIMEOUT_MS = 3000)`. A hung page must not stall the queue — an action without a snapshot beats actions lost to the 5s drain timeout. Screenshots additionally pass Playwright's own `timeout` (its default is 30s).
 - **Console progress**: Each action prints a human-readable line `[NNN] <type> → <description>` via `formatActionLine()` in `recorder.ts`. Green = success, yellow = capture failed. Description is derived from `target.role`/`target.accessibleName` when available, fallback to selector or URL.
-- **Finalization safety**: 5s timeout on action queue drain + 10s absolute timeout in `main.ts` to prevent zombie processes. Shutdown triggers: context close, page close, browser disconnect, SIGINT, SIGTERM.
+- **Finalization safety**: 5s timeout on action queue drain + 10s absolute timeout in `main.ts` to prevent zombie processes. Shutdown triggers: context close, page close, browser disconnect, SIGINT, SIGTERM. `finalize()` is guarded by a `finalized` flag — every trigger may fire.
+- **Archive safety**: the recording dir is removed after archiving only if `bytes > 0` and `warnings` is empty; otherwise the sources are kept and the warnings printed — an incomplete zip must never be the only copy.
+- **Queue error isolation**: `enqueueAction` attaches `.catch` to every link of the `actionQueue` chain — without it a single failure turns the queue into a rejected promise and all subsequent actions are silently dropped.
 - **`@ts-expect-error` for internal APIs**: Used to suppress TS errors on `_enableRecorder` and other underscore-prefixed Playwright internals.
 - **Non-blocking captures**: Screenshot/snapshot failures don't block action recording.
 - **Tests**: Vitest (not Jest). Test files live in `src/__tests__/`. Default environment is `node`. Add `// @vitest-environment jsdom` at the top of files that test browser-API code (e.g. `dom-cleaner.test.ts`). Cover pure utility functions only — recorder/main require a live Playwright context, so they're not unit-tested.
@@ -127,10 +139,13 @@ recordings/test-YYYY-MM-DDTHH-mm-ss-sssZ-xxxxxx/
 ├── TEST_GUIDE.md           # test generation guidelines (from docs/)
 ├── actions.jsonl           # all actions, one JSON per line (primary file)
 ├── snapshots.jsonl         # cleaned DOM snapshots, one per line (on demand)
+├── network.har             # only with --har; full network dump, not for AI context
 └── screenshots/
     ├── 001-navigate.jpg
     └── 002-click.jpg
 ```
+
+Unless `--no-archive` is passed, this directory is zipped to `recordings/<name>.zip` and then deleted (see Archive safety above).
 
 Action types are determined by Playwright codegen: `navigate`, `click`, `fill`, `press`, `select`, `check`, `uncheck`, `hover`, etc. Screenshots are **JPEG by default** (quality 80); pass `--jpeg [quality]` to override quality.
 
