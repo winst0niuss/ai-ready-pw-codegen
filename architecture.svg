@@ -1,196 +1,90 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0b1020"/>
-      <stop offset="1" stop-color="#111827"/>
-    </linearGradient>
-    <linearGradient id="hero" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#38bdf8"/>
-      <stop offset="1" stop-color="#818cf8"/>
-    </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
-      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.28"/>
-    </filter>
-    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
-      <path d="M0,0 L12,6 L0,12 Z" fill="#64748b"/>
-    </marker>
-    <marker id="arrowBlue" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
-      <path d="M0,0 L12,6 L0,12 Z" fill="#38bdf8"/>
-    </marker>
-    <style>
-      .title{font:800 38px Inter,system-ui,sans-serif;fill:#f8fafc}
-      .subtitle{font:500 17px Inter,system-ui,sans-serif;fill:#94a3b8}
-      .stage{font:800 14px Inter,system-ui,sans-serif;letter-spacing:2px}
-      .cardTitle{font:700 20px Inter,system-ui,sans-serif;fill:#f8fafc}
-      .body{font:500 15px Inter,system-ui,sans-serif;fill:#94a3b8}
-      .mono{font:600 14px ui-monospace,SFMono-Regular,Menlo,monospace;fill:#cbd5e1}
-      .small{font:500 13px Inter,system-ui,sans-serif;fill:#64748b}
-      .chip{font:700 12px Inter,system-ui,sans-serif;letter-spacing:1px}
-    </style>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 520" width="1400" height="520">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0b1020"/><stop offset="1" stop-color="#111827"/></linearGradient>
+  <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#38bdf8"/><stop offset="1" stop-color="#818cf8"/></linearGradient>
+  <filter id="shadow"><feDropShadow dx="0" dy="8" stdDeviation="12" flood-opacity=".25"/></filter>
+  <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0 0L12 6L0 12Z" fill="#64748b"/></marker>
+  <style>
+    .title{font:800 34px Inter,system-ui,sans-serif;fill:#f8fafc}
+    .sub{font:500 16px Inter,system-ui,sans-serif;fill:#94a3b8}
+    .label{font:800 13px Inter,system-ui,sans-serif;letter-spacing:2px}
+    .head{font:750 22px Inter,system-ui,sans-serif;fill:#f8fafc}
+    .body{font:500 15px Inter,system-ui,sans-serif;fill:#94a3b8}
+    .mono{font:600 14px ui-monospace,SFMono-Regular,Menlo,monospace;fill:#cbd5e1}
+  </style>
+</defs>
 
-  <!-- Background -->
-  <rect width="1600" height="900" fill="url(#bg)"/>
-  <circle cx="1350" cy="100" r="260" fill="#6366f1" opacity="0.06"/>
-  <circle cx="160" cy="780" r="280" fill="#38bdf8" opacity="0.04"/>
+<rect width="1400" height="520" rx="24" fill="url(#bg)"/>
 
-  <!-- Header -->
-  <text x="80" y="72" class="title">AI-Ready PW Codegen</text>
-  <text x="80" y="103" class="subtitle">Offline Playwright recording → structured evidence → AI-ready test generation</text>
-  <rect x="1270" y="55" width="250" height="38" rx="19" fill="#0f172a" stroke="#334155"/>
-  <circle cx="1295" cy="74" r="6" fill="#34d399"/>
-  <text x="1312" y="79" class="chip" fill="#86efac">NO AI CONNECTION REQUIRED</text>
+<!-- Header -->
+<text x="70" y="68" class="title">AI-Ready PW Codegen</text>
+<text x="70" y="98" class="sub">Record once. Give AI the context. Generate reliable Playwright tests.</text>
 
-  <!-- Main flow line -->
-  <line x1="465" y1="445" x2="535" y2="445" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="1015" y1="445" x2="1085" y2="445" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+<!-- Flow arrows -->
+<line x1="350" y1="280" x2="415" y2="280" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+<line x1="685" y1="280" x2="750" y2="280" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+<line x1="1020" y1="280" x2="1085" y2="280" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
 
-  <!-- ================= RECORD ================= -->
-  <g transform="translate(80,155)">
-    <text x="0" y="0" class="stage" fill="#38bdf8">01 · RECORD</text>
-    <text x="0" y="32" class="cardTitle">Real user interaction</text>
-    <text x="0" y="57" class="body">Chromium + Playwright Codegen</text>
-
-    <!-- Browser card -->
-    <g transform="translate(0,85)" filter="url(#shadow)">
-      <rect width="385" height="430" rx="18" fill="#0f172a" stroke="#334155"/>
-      <rect width="385" height="48" rx="18" fill="#172033"/>
-      <rect y="32" width="385" height="16" fill="#172033"/>
-      <circle cx="23" cy="24" r="5" fill="#f87171"/>
-      <circle cx="40" cy="24" r="5" fill="#fbbf24"/>
-      <circle cx="57" cy="24" r="5" fill="#34d399"/>
-      <rect x="82" y="13" width="220" height="22" rx="11" fill="#0b1220"/>
-      <text x="192" y="28" text-anchor="middle" class="small">your-app.com</text>
-      <rect x="318" y="11" width="52" height="25" rx="12" fill="#7f1d1d"/>
-      <circle cx="331" cy="23.5" r="4" fill="#fca5a5"/>
-      <text x="351" y="28" text-anchor="middle" font-size="11" font-weight="800" fill="#fecaca">REC</text>
-
-      <text x="28" y="92" class="small">LOGIN</text>
-      <rect x="28" y="112" width="329" height="48" rx="9" fill="#111827" stroke="#334155"/>
-      <text x="44" y="142" class="body">Email</text>
-      <rect x="28" y="175" width="329" height="48" rx="9" fill="#111827" stroke="#334155"/>
-      <text x="44" y="205" class="body">Password</text>
-      <rect x="28" y="242" width="329" height="52" rx="9" fill="url(#hero)"/>
-      <text x="192" y="275" text-anchor="middle" font-size="17" font-weight="800" fill="#fff">Sign in</text>
-
-      <rect x="28" y="326" width="329" height="66" rx="10" fill="#111827" stroke="#1e293b"/>
-      <circle cx="52" cy="350" r="6" fill="#38bdf8"/>
-      <text x="68" y="355" class="mono">actionAdded</text>
-      <text x="68" y="378" class="small">recorded locally</text>
-    </g>
-
-    <rect x="0" y="540" width="385" height="56" rx="12" fill="#082f49" stroke="#075985"/>
-    <text x="20" y="564" class="chip" fill="#7dd3fc">OFFLINE FIRST</text>
-    <text x="20" y="584" class="small" fill="#bae6fd">Everything is captured on the recording machine.</text>
+<!-- 1 -->
+<g transform="translate(70 160)">
+  <text x="0" y="0" class="label" fill="#38bdf8">01 · RECORD</text>
+  <g transform="translate(0 28)" filter="url(#shadow)">
+    <rect width="280" height="210" rx="18" fill="#0f172a" stroke="#334155"/>
+    <rect width="280" height="42" rx="18" fill="#172033"/>
+    <circle cx="22" cy="21" r="5" fill="#f87171"/><circle cx="39" cy="21" r="5" fill="#fbbf24"/><circle cx="56" cy="21" r="5" fill="#34d399"/>
+    <rect x="78" y="11" width="145" height="20" rx="10" fill="#0b1220"/>
+    <text x="150" y="25" text-anchor="middle" font-size="11" fill="#64748b">your-app.com</text>
+    <text x="25" y="78" class="head">Your web app</text>
+    <text x="25" y="108" class="body">Click · Fill · Navigate</text>
+    <rect x="25" y="132" width="230" height="46" rx="9" fill="url(#accent)"/>
+    <text x="140" y="161" text-anchor="middle" font-size="16" font-weight="800" fill="white">Playwright Recorder</text>
   </g>
+</g>
 
-  <!-- ================= CAPTURE ================= -->
-  <g transform="translate(535,155)">
-    <text x="0" y="0" class="stage" fill="#34d399">02 · CAPTURE</text>
-    <text x="0" y="32" class="cardTitle">Context around every action</text>
-    <text x="0" y="57" class="body">_enableRecorder hooks the Playwright recorder</text>
-
-    <!-- Central action -->
-    <g transform="translate(45,92)" filter="url(#shadow)">
-      <rect width="365" height="92" rx="16" fill="#052e2b" stroke="#10b981" stroke-width="2"/>
-      <text x="24" y="35" class="mono" fill="#a7f3d0">ACTION 002 · CLICK</text>
-      <text x="24" y="63" font-size="18" font-weight="700" fill="#ecfdf5">button "Sign in"</text>
-    </g>
-
-    <!-- Four capture cards -->
-    <g transform="translate(0,220)" filter="url(#shadow)">
-      <rect width="205" height="125" rx="14" fill="#0f172a" stroke="#334155"/>
-      <circle cx="28" cy="30" r="14" fill="#0c4a6e"/><text x="28" y="35" text-anchor="middle" font-size="16">⌖</text>
-      <text x="54" y="35" class="cardTitle" font-size="17">Selectors</text>
-      <text x="18" y="67" class="body">testId · role · label</text>
-      <text x="18" y="91" class="body">text · CSS · XPath</text>
-      <text x="18" y="113" class="small">robust locator candidates</text>
-    </g>
-    <g transform="translate(225,220)" filter="url(#shadow)">
-      <rect width="205" height="125" rx="14" fill="#0f172a" stroke="#334155"/>
-      <circle cx="28" cy="30" r="14" fill="#14532d"/><text x="28" y="35" text-anchor="middle" font-size="16">◎</text>
-      <text x="54" y="35" class="cardTitle" font-size="17">Target</text>
-      <text x="18" y="67" class="body">role · name · state</text>
-      <text x="18" y="91" class="body">attributes · bounds</text>
-      <text x="18" y="113" class="small">exact element context</text>
-    </g>
-    <g transform="translate(0,360)" filter="url(#shadow)">
-      <rect width="205" height="125" rx="14" fill="#0f172a" stroke="#334155"/>
-      <circle cx="28" cy="30" r="14" fill="#4c1d95"/><text x="28" y="35" text-anchor="middle" font-size="16">◇</text>
-      <text x="54" y="35" class="cardTitle" font-size="17">Page context</text>
-      <text x="18" y="67" class="body">Accessibility tree</text>
-      <text x="18" y="91" class="body">Cleaned DOM · iframe path</text>
-      <text x="18" y="113" class="small">structure when needed</text>
-    </g>
-    <g transform="translate(225,360)" filter="url(#shadow)">
-      <rect width="205" height="125" rx="14" fill="#0f172a" stroke="#334155"/>
-      <circle cx="28" cy="30" r="14" fill="#713f12"/><text x="28" y="35" text-anchor="middle" font-size="16">◌</text>
-      <text x="54" y="35" class="cardTitle" font-size="17">Evidence</text>
-      <text x="18" y="67" class="body">Screenshot · console</text>
-      <text x="18" y="91" class="body">XHR/fetch · response body</text>
-      <text x="18" y="113" class="small">debugging signals</text>
-    </g>
-
-    <text x="215" y="525" text-anchor="middle" class="small">Written immediately · crash-safe per action</text>
+<!-- 2 -->
+<g transform="translate(415 160)">
+  <text x="0" y="0" class="label" fill="#34d399">02 · CAPTURE</text>
+  <g transform="translate(0 28)" filter="url(#shadow)">
+    <rect width="270" height="210" rx="18" fill="#0f172a" stroke="#334155"/>
+    <text x="25" y="58" class="head">Action context</text>
+    <text x="25" y="94" class="body">Actions &amp; selectors</text>
+    <text x="25" y="122" class="body">Page structure</text>
+    <text x="25" y="150" class="body">Screenshots</text>
+    <text x="25" y="178" class="body">Logs &amp; network</text>
   </g>
+</g>
 
-  <!-- ================= PACKAGE ================= -->
-  <g transform="translate(1085,155)">
-    <text x="0" y="0" class="stage" fill="#a78bfa">03 · PACKAGE</text>
-    <text x="0" y="32" class="cardTitle">AI-ready recording archive</text>
-    <text x="0" y="57" class="body">Structured for efficient AI context usage</text>
-
-    <g transform="translate(0,85)" filter="url(#shadow)">
-      <rect width="435" height="430" rx="18" fill="#0f172a" stroke="#4c1d95" stroke-width="1.5"/>
-      <rect width="435" height="62" rx="18" fill="#1e1b4b"/>
-      <rect y="44" width="435" height="18" fill="#1e1b4b"/>
-      <text x="25" y="39" font-size="20" font-weight="800" fill="#ddd6fe">📦 recording.zip</text>
-      <text x="25" y="94" class="small">AI reads in this order</text>
-
-      <rect x="22" y="112" width="391" height="54" rx="9" fill="#111827" stroke="#334155"/>
-      <text x="40" y="135" class="mono" fill="#c4b5fd">SESSION.md</text>
-      <text x="40" y="155" class="small">session overview + how to use the data</text>
-
-      <rect x="22" y="177" width="391" height="54" rx="9" fill="#111827" stroke="#334155"/>
-      <text x="40" y="200" class="mono" fill="#93c5fd">actions.jsonl</text>
-      <text x="40" y="220" class="small">primary timeline · one action per line</text>
-
-      <rect x="22" y="242" width="391" height="54" rx="9" fill="#111827" stroke="#334155"/>
-      <text x="40" y="265" class="mono" fill="#86efac">screenshots/</text>
-      <text x="40" y="285" class="small">visual evidence for selected actions</text>
-
-      <rect x="22" y="307" width="391" height="54" rx="9" fill="#111827" stroke="#334155"/>
-      <text x="40" y="330" class="mono" fill="#f9a8d4">snapshots.jsonl</text>
-      <text x="40" y="350" class="small">large DOM context · read on demand</text>
-
-      <rect x="22" y="372" width="391" height="34" rx="8" fill="#172033"/>
-      <text x="217" y="395" text-anchor="middle" class="small">+ TEST_GUIDE.md · DATA_FORMAT.md · network.har*</text>
-    </g>
+<!-- 3 -->
+<g transform="translate(750 160)">
+  <text x="0" y="0" class="label" fill="#a78bfa">03 · ARCHIVE</text>
+  <g transform="translate(0 28)" filter="url(#shadow)">
+    <rect width="270" height="210" rx="18" fill="#0f172a" stroke="#4c1d95"/>
+    <text x="25" y="58" class="head">recording.zip</text>
+    <text x="25" y="94" class="mono">actions.jsonl</text>
+    <text x="25" y="122" class="mono">snapshots.jsonl</text>
+    <text x="25" y="150" class="mono">screenshots/</text>
+    <text x="25" y="178" class="mono">SESSION.md</text>
   </g>
+</g>
 
-  <!-- Handoff -->
-  <g transform="translate(80,760)">
-    <rect width="1440" height="82" rx="18" fill="#0f172a" stroke="#334155"/>
-    <rect x="22" y="18" width="42" height="42" rx="12" fill="url(#hero)"/>
-    <text x="43" y="47" text-anchor="middle" font-size="21">✦</text>
-    <text x="84" y="43" class="cardTitle">AI handoff</text>
-    <text x="84" y="64" class="body">Claude Code · Cursor · Gemini CLI · any model that can read the archive</text>
-
-    <line x1="670" y1="18" x2="670" y2="64" stroke="#334155"/>
-    <text x="710" y="42" class="mono" fill="#e2e8f0">archive → context → test</text>
-    <text x="710" y="63" class="small">Generate Playwright tests using real actions, locators and page evidence</text>
-
-    <rect x="1230" y="20" width="185" height="42" rx="21" fill="#052e16" stroke="#166534"/>
-    <circle cx="1252" cy="41" r="5" fill="#4ade80"/>
-    <text x="1270" y="46" class="chip" fill="#86efac">READY FOR AI</text>
+<!-- 4 -->
+<g transform="translate(1085 160)">
+  <text x="0" y="0" class="label" fill="#f59e0b">04 · GENERATE</text>
+  <g transform="translate(0 28)" filter="url(#shadow)">
+    <rect width="245" height="210" rx="18" fill="#0f172a" stroke="#334155"/>
+    <text x="25" y="58" class="head">AI</text>
+    <text x="25" y="91" class="body">Claude · Cursor</text>
+    <text x="25" y="116" class="body">Gemini · any LLM</text>
+    <line x1="25" y1="140" x2="220" y2="140" stroke="#334155"/>
+    <text x="25" y="171" class="mono">login.spec.ts</text>
+    <text x="25" y="194" class="body">Playwright test</text>
   </g>
+</g>
 
-  <!-- Flow labels -->
-  <text x="500" y="431" text-anchor="middle" class="small">events</text>
-  <text x="1050" y="431" text-anchor="middle" class="small">archive</text>
-
-  <!-- Footer -->
-  <text x="80" y="875" class="small">* network.har is optional (--har) · screenshots, console and network capture can be disabled with CLI flags</text>
-  <text x="1520" y="875" text-anchor="end" class="small">Playwright 1.59.1</text>
+<!-- Footer -->
+<rect x="70" y="425" width="1260" height="52" rx="14" fill="#0f172a" stroke="#1e293b"/>
+<circle cx="96" cy="451" r="6" fill="#34d399"/>
+<text x="115" y="456" class="mono">OFFLINE FIRST</text>
+<text x="255" y="456" class="body">No AI connection is needed while recording.</text>
+<text x="1040" y="456" class="body">Record → Context → AI → Test</text>
 </svg>
