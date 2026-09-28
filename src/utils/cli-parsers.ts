@@ -1,5 +1,5 @@
-const DEFAULT_VIEWPORT_WIDTH = 1920;
-const DEFAULT_VIEWPORT_HEIGHT = 1080;
+const DEFAULT_VIEWPORT_WIDTH = 1280;
+const DEFAULT_VIEWPORT_HEIGHT = 720;
 
 export interface ParsedCliArgs {
   url?: string;

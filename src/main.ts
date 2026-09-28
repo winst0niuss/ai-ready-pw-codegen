@@ -23,7 +23,7 @@ function printUsage() {
   console.log('  --har                Also write a full network.har (all resources, for manual analysis)');
   console.log('  --max-actions <N>    Stop after N actions');
   console.log('  --output-dir <path>  Output directory (default: ./recordings)');
-  console.log('  --viewport-size=W,H  Viewport size (default: 1920,1080)');
+  console.log('  --viewport-size=W,H  Viewport size (default: 1280,720)');
   console.log('  --jpeg [quality]     Screenshot quality for JPEG (default: 80); JPEG is the default format');
   console.log('  --help, -h           Show this help');
   console.log('  --version, -v        Show version');
