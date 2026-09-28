@@ -4,6 +4,7 @@ import { CodegenActionData, ConsoleLogEntry, FrameContext, NetworkRequest, Recor
 import { getDomCleanerScript } from './snapshot/dom-cleaner';
 import { captureAccessibilityTree } from './snapshot/accessibility';
 import { captureTargetElement } from './snapshot/target-element';
+import { normalizeCodegenData } from './utils/codegen-data';
 import { writeScreenshot } from './utils/fs-helpers';
 import { JsonlWriter } from './utils/jsonl-writer';
 import { withTimeout } from './utils/with-timeout';
@@ -182,20 +183,22 @@ export class Recorder {
     }
 
     // Launch codegen GUI inspector
-    await (this.context as any)._enableRecorder({
-      mode: 'recording',
-      language: 'playwright-test',
-    });
+    if (this.options.inspectorWindow !== false) {
+      await (this.context as any)._enableRecorder({
+        mode: 'recording',
+        language: 'playwright-test',
+      });
+    }
 
     // Attach eventSink for action capture
     await (this.context as any)._enableRecorder(
       { mode: 'recording', language: 'playwright-test', recorderMode: 'api' },
       {
-        actionAdded: (page: Page, data: CodegenActionData, code: string) => {
-          this.enqueueAction(page, data, code, false);
+        actionAdded: (page: Page, data: unknown, code: string) => {
+          this.enqueueAction(page, normalizeCodegenData(data), code, false);
         },
-        actionUpdated: (page: Page, data: CodegenActionData, code: string) => {
-          this.enqueueAction(page, data, code, true);
+        actionUpdated: (page: Page, data: unknown, code: string) => {
+          this.enqueueAction(page, normalizeCodegenData(data), code, true);
         },
       }
     );

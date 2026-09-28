@@ -124,11 +124,12 @@ export interface RecorderOptions {
   captureNetwork?: boolean;
   screenshotQuality?: number; // 1-100, JPEG quality
   har?: boolean; // write full network.har via Playwright recordHar
+  inspectorWindow?: boolean; // open the Playwright Inspector window (default true; unsupported with api mode since 1.63)
 }
 
 // Data from Playwright codegen eventSink
 export interface CodegenActionData {
-  frame: { pageGuid: string; framePath: string[] };
+  frame: { pageGuid?: string; framePath: string[] };
   action: {
     name: string;
     selector?: string;
@@ -142,8 +143,8 @@ export interface CodegenActionData {
     button?: string;
     clickCount?: number;
     position?: { x: number; y: number };
-    signals: unknown[];
+    signals?: unknown[];
   };
-  startTime: number;
+  startTime?: number;
   committed?: boolean;
 }

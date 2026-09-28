@@ -177,7 +177,9 @@ See [docs/DATA_FORMAT.md](docs/DATA_FORMAT.md) and [docs/TEST_GUIDE.md](docs/TES
 5. Writes each action to `actions.jsonl`/`snapshots.jsonl` immediately — a crash costs at most the last action, not the session
 6. On browser close: generates `SESSION.md`, copies the docs and archives everything into `.zip`
 
-Uses Playwright internal API (underscore-prefixed). Requires Playwright `^1.59.1` (tested on 1.59.1). If Chromium is missing, run `npx playwright@<version> install chromium` with the version printed in the error.
+Uses Playwright internal API (underscore-prefixed). Works with Playwright `^1.59.1` (verified on 1.59.1 and 1.63.0). If the recorder is started inside a project that has its own `playwright`, that version is used — together with the browsers already installed for it, so nothing is downloaded or changed. Otherwise the bundled Playwright is used. If Chromium is missing, run `npx playwright@<version> install chromium` with the version printed in the error.
+
+With Playwright ≥1.63 only one recorder UI can be attached to a browser context, so the separate Inspector window is not opened — use the in-page recorder toolbar; every action is still printed to the console.
 
 ## Development
 

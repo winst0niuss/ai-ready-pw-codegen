@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { chromium, Browser } from 'playwright';
+import type { Browser } from 'playwright';
 import fs from 'fs';
 import path from 'path';
 import { Recorder } from './recorder';
@@ -8,6 +8,7 @@ import { createArchive } from './utils/archiver';
 import { writeAnalysisPrompt } from './utils/analysis-prompt';
 import { RecorderOptions } from './types';
 import { parseAndValidateUrl, parseCliArgs } from './utils/cli-parsers';
+import { loadPlaywright, supportsInspectorWithApi } from './utils/playwright-loader';
 
 const FINALIZE_TIMEOUT_MS = 10000;
 
@@ -72,6 +73,7 @@ async function main() {
   }
 
   const outputDir = await generateOutputDir(path.resolve(parsedArgs.outputBase));
+  const { playwright, version: pwVersion, dir: pwDir } = loadPlaywright();
   const options: RecorderOptions = {
     outputDir,
     screenshots: !parsedArgs.noScreenshots,
@@ -81,6 +83,7 @@ async function main() {
     captureConsole: !parsedArgs.noConsole,
     captureNetwork: !parsedArgs.noNetwork,
     har: parsedArgs.har,
+    inspectorWindow: supportsInspectorWithApi(pwVersion),
     ...(parsedArgs.screenshotQuality !== undefined && { screenshotQuality: parsedArgs.screenshotQuality }),
   };
 
@@ -88,20 +91,20 @@ async function main() {
   const harPath = path.join(outputDir, 'network.har');
 
   console.log(`🎭 AI-Ready PW Codegen`);
+  console.log(`🧩 Playwright ${pwVersion} (${pwDir})`);
+  if (!options.inspectorWindow) {
+    console.log('ℹ️  Inspector window is not available with Playwright ≥1.63 — use the in-page toolbar; actions are printed below.');
+  }
   console.log(`🌐 URL: ${validatedUrl}`);
   console.log(`📂 Output: ${outputDir}`);
   console.log('');
   console.log('🔴 Recording... Close the browser to stop.');
 
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const pwVersion = (require('playwright/package.json') as { version: string }).version;
-
   let browser: Browser;
   try {
-    browser = await chromium.launch({ headless: false });
+    browser = await playwright.chromium.launch({ headless: false });
   } catch (err) {
-    // Каждая версия Playwright ждёт свою ревизию Chromium — `npx playwright install`
-    // в чужом проекте может поставить другую, поэтому указываем точную версию
+    // Each Playwright version expects its own Chromium revision
     if (err instanceof Error && err.message.includes("Executable doesn't exist")) {
       console.error(`❌ Chromium for Playwright ${pwVersion} is not installed. Run:`);
       console.error(`   npx playwright@${pwVersion} install chromium`);

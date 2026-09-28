@@ -91,11 +91,15 @@ Playwright Codegen (built-in recorder)
       → on finalize: drain queue, flush last line, write SESSION.md, copy docs, archive
 ```
 
-**Dual `_enableRecorder` call**: First call opens the GUI inspector, second call (with `recorderMode: 'api'`) attaches the eventSink for programmatic access. Both coexist on the same context.
+**Dual `_enableRecorder` call**: First call opens the GUI inspector, second call (with `recorderMode: 'api'`) attaches the eventSink for programmatic access. Both coexist on the same context only up to Playwright 1.62 — since 1.63 a context holds a single recorder app and the second call is silently ignored, so `main.ts` sets `options.inspectorWindow = supportsInspectorWithApi(version)` and on ≥1.63 only the api call is made (in-page toolbar stays).
+
+**eventSink data format**: ≤1.62 sends `{ frame: { framePath }, action, startTime }`; 1.63+ sends the bare `action` with the iframe chain embedded in `selector` (`… >> internal:control=enter-frame >> …`). `utils/codegen-data.ts::normalizeCodegenData` converts both to `CodegenActionData`, splitting the chain back into `framePath`.
+
+**Playwright resolution**: `utils/playwright-loader.ts::loadPlaywright` prefers `playwright` from the cwd project, falling back to the bundled one — so the recorder uses the project's version and its already-installed browser revision.
 
 **Protocol auto-detection**: When URL has no protocol, tries `http://` first, falls back to `https://`. Explicit `http://` or `https://` used as-is.
 
-**Important**: Uses Playwright internal API (underscore-prefixed). Playwright dependency is `^1.59.1` (any 1.x ≥ 1.59.1; last verified on 1.59.1). `main.ts` checks `_enableRecorder` at startup and prints an exact `npx playwright@<version> install chromium` hint when the browser revision is missing. Raise the lower bound only after verifying `_enableRecorder` still works.
+**Important**: Uses Playwright internal API (underscore-prefixed). Playwright dependency is `^1.59.1` (any 1.x ≥ 1.59.1; verified on 1.59.1 and 1.63.0). `main.ts` checks `_enableRecorder` at startup and prints an exact `npx playwright@<version> install chromium` hint when the browser revision is missing. Raise the lower bound only after verifying `_enableRecorder` still works.
 
 ### Key Files
 
@@ -107,6 +111,8 @@ Playwright Codegen (built-in recorder)
 - **`src/snapshot/target-element.ts`** — Runs in browser via `elementHandle.evaluate()`: captures target element snapshot (tag, ARIA role, accessible name, state, bounding box, ancestors, computed style) + builds selector candidates (testId, role+name, label, placeholder, text, CSS, XPath)
 - **`src/utils/cli-parsers.ts`** — `parseCliArgs` (all flags → `ParsedCliArgs`, collects `unknownFlags` for a warning instead of failing) + `parseAndValidateUrl` (protocol detection logic) + `parseViewportSize` (validates `W,H` format, range 1–7680). Extracted for unit-testability.
 - **`src/utils/jsonl-writer.ts`** — `JsonlWriter`: appends each JSONL line as it arrives, keeps only the last one in memory for `actionUpdated` overwrite, counts `staleUpdates` (updates that arrived after the line was already flushed). Always creates the file, even for an empty session.
+- **`src/utils/playwright-loader.ts`** — `loadPlaywright` (project Playwright first, bundled fallback) + `supportsInspectorWithApi(version)` (false on ≥1.63).
+- **`src/utils/codegen-data.ts`** — `normalizeCodegenData`: unifies eventSink data between Playwright ≤1.62 and ≥1.63.
 - **`src/utils/with-timeout.ts`** — `withTimeout` + `CaptureTimeoutError`: caps a single capture; the underlying Playwright promise is not cancellable, so its rejection is swallowed to avoid `unhandledRejection`.
 - **`src/utils/archiver.ts`** — Creates `.zip` archive via `archiver` npm package (cross-platform, pure JS). Returns `ArchiveResult { archivePath, bytes, warnings }` — `main.ts` deletes the source dir only when the archive is provably complete.
 - **`src/utils/analysis-prompt.ts`** — Generates `SESSION.md` with session metadata (`hasHar` flag mentions `network.har`)
