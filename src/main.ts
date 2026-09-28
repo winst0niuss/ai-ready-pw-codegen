@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { chromium } from 'playwright';
+import { chromium, Browser } from 'playwright';
 import fs from 'fs';
 import path from 'path';
 import { Recorder } from './recorder';
@@ -93,7 +93,22 @@ async function main() {
   console.log('');
   console.log('🔴 Recording... Close the browser to stop.');
 
-  const browser = await chromium.launch({ headless: false });
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const pwVersion = (require('playwright/package.json') as { version: string }).version;
+
+  let browser: Browser;
+  try {
+    browser = await chromium.launch({ headless: false });
+  } catch (err) {
+    // Каждая версия Playwright ждёт свою ревизию Chromium — `npx playwright install`
+    // в чужом проекте может поставить другую, поэтому указываем точную версию
+    if (err instanceof Error && err.message.includes("Executable doesn't exist")) {
+      console.error(`❌ Chromium for Playwright ${pwVersion} is not installed. Run:`);
+      console.error(`   npx playwright@${pwVersion} install chromium`);
+      process.exit(1);
+    }
+    throw err;
+  }
   const context = await browser.newContext({
     viewport: options.viewport,
     ...(options.har && { recordHar: { path: harPath, mode: 'full', content: 'embed' } }),
@@ -101,10 +116,8 @@ async function main() {
   const page = await context.newPage();
 
   if (typeof (context as any)._enableRecorder !== 'function') {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pwVersion = (require('playwright/package.json') as { version: string }).version;
     console.error(`❌ Playwright internal API _enableRecorder is not available (detected version: ${pwVersion}).`);
-    console.error('   This tool requires Playwright >=1.50.0 with the internal recorder API.');
+    console.error('   This tool requires Playwright >=1.59.1 with the internal recorder API.');
     await browser.close();
     process.exit(1);
   }

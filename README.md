@@ -1,7 +1,7 @@
 # AI-Ready PW Codegen
 
 [![npm version](https://img.shields.io/npm/v/ai-ready-pw-codegen)](https://www.npmjs.com/package/ai-ready-pw-codegen)
-[![playwright](https://img.shields.io/badge/playwright-1.59.1-45ba4b)](https://playwright.dev/)
+[![playwright](https://img.shields.io/badge/playwright-%5E1.59.1-45ba4b)](https://playwright.dev/)
 [![license](https://img.shields.io/npm/l/ai-ready-pw-codegen)](https://github.com/winst0niuss/ai-ready-pw-codegen/blob/main/LICENSE)
 
 <br>
@@ -177,7 +177,7 @@ See [docs/DATA_FORMAT.md](docs/DATA_FORMAT.md) and [docs/TEST_GUIDE.md](docs/TES
 5. Writes each action to `actions.jsonl`/`snapshots.jsonl` immediately — a crash costs at most the last action, not the session
 6. On browser close: generates `SESSION.md`, copies the docs and archives everything into `.zip`
 
-Uses Playwright internal API (underscore-prefixed). Playwright version pinned to 1.59.1.
+Uses Playwright internal API (underscore-prefixed). Requires Playwright `^1.59.1` (tested on 1.59.1). If Chromium is missing, run `npx playwright@<version> install chromium` with the version printed in the error.
 
 ## Development
 

@@ -95,7 +95,7 @@ Playwright Codegen (built-in recorder)
 
 **Protocol auto-detection**: When URL has no protocol, tries `http://` first, falls back to `https://`. Explicit `http://` or `https://` used as-is.
 
-**Important**: Uses Playwright internal API (underscore-prefixed). Playwright version is pinned (currently `1.59.1`) to prevent breakage — bump only after verifying `_enableRecorder` still works.
+**Important**: Uses Playwright internal API (underscore-prefixed). Playwright dependency is `^1.59.1` (any 1.x ≥ 1.59.1; last verified on 1.59.1). `main.ts` checks `_enableRecorder` at startup and prints an exact `npx playwright@<version> install chromium` hint when the browser revision is missing. Raise the lower bound only after verifying `_enableRecorder` still works.
 
 ### Key Files
 
