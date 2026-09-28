@@ -96,6 +96,8 @@ recordings/test-YYYY-MM-DDTHH-mm-ss-sssZ-xxxxxx/
 └── network.har             # Only with --har — full network dump for manual analysis
 ```
 
+Passwords are masked: whatever is typed into a password field (`type="password"`, also after a "show password" toggle) is replaced with `***` in actions, generated code, snapshots, console logs and XHR/fetch bodies. `network.har` (`--har`) is a raw dump and is **not** masked — don't share it.
+
 Unless `--no-archive` is passed, this directory is zipped to `recordings/test-….zip` and then removed. If the archive turns out incomplete, the directory is kept instead — you never end up without a copy.
 
 ### actions.jsonl

@@ -58,6 +58,7 @@ Each line is a JSON object — one user action with full page context:
 | `computedStyle` | `display`, `visibility`, `opacity`, `pointerEvents` |
 | `ancestors` | Parent chain (`tagName`, `id`, `classes`, `role`, `testId`) — useful for scoping locators |
 | `missing: true` | The element could not be resolved at capture time; other fields are absent |
+| `secret: true` | Password field — the entered value is replaced with `***` everywhere in the recording |
 
 ### `selectors` — pre-computed locator candidates
 
@@ -83,6 +84,10 @@ Only the candidates that apply to the element are present. Use them instead of d
 ```
 
 `path` is the chain of iframe selectors from the top-level page down to the frame (one entry per nesting level). `target`, `selectors` and the DOM snapshot were captured **inside that frame**; `accessibilityTree` is always captured from the top-level page.
+
+## Masked passwords
+
+Values typed into password fields are replaced with `***` in `action.value`, `action.codegenCode`, `target.attributes.value`, the accessibility tree, the DOM snapshot, console logs and network bodies. Such actions have `target.secret: true`. The real value is not in the recording — do not try to recover it.
 
 ## snapshots.jsonl
 

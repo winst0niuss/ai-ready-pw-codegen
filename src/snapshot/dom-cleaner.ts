@@ -62,6 +62,11 @@ export function getDomCleanerScript(): () => string {
         el.removeAttribute(name);
       }
 
+      // Значение поля пароля в снимок не пишем
+      if (el.tagName === 'INPUT' && (el.getAttribute('type') || '').toLowerCase() === 'password' && el.hasAttribute('value')) {
+        el.setAttribute('value', '***');
+      }
+
       const children = Array.from(el.childNodes);
       for (const child of children) {
         cleanNode(child, depth + 1);

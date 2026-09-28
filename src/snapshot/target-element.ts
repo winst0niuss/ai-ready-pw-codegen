@@ -111,6 +111,16 @@ function extractTargetData(el: any): {
       attributes[attr.name] = attr.value;
     }
   }
+  // Поле пароля: сейчас type="password", либо было им в момент ввода (метка из
+  // SECRET_MARKER_SCRIPT — «глазик» мог уже переключить type на text)
+  const secret =
+    (tagName === 'INPUT' && (el.type || '').toLowerCase() === 'password') ||
+    el.__aiReadyPwSecret === true ||
+    /password/i.test(el.getAttribute('autocomplete') || '');
+  // Значение в архив не пишем (React синхронизирует его в атрибут value)
+  if (secret && 'value' in attributes) {
+    attributes.value = '***';
+  }
 
   // Accessible name: aria-label > aria-labelledby > associated <label> > innerText > title > alt > placeholder
   let accessibleName: string | undefined = truncate(el.getAttribute('aria-label'));
@@ -249,6 +259,7 @@ function extractTargetData(el: any): {
   selectors.xpath = buildXPath();
 
   const target: TargetSnapshot = {
+    ...(secret ? { secret: true } : {}),
     tagName,
     ...(role ? { role } : {}),
     ...(accessibleName ? { accessibleName } : {}),

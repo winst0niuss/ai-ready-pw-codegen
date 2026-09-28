@@ -100,4 +100,5 @@ test.describe('User flow: [describe based on actions]', () => {
 - Check `consoleLogs` for errors that might indicate test-relevant failures
 - Use `networkRequests` to make waits explicit instead of arbitrary timeouts: `await page.waitForResponse(r => r.url().includes('/api/data'))`. Response bodies also show what the app expects — useful for `page.route()` mocks
 - `target.state` tells you what to assert after an action (`checked`, `enabled`, `focused`); a `target.missing: true` means the element was not resolved at capture time — rely on the accessibility tree or DOM snapshot for that step
+- Actions with `target.secret: true` are password inputs with the value masked as `***` — read the password from an environment variable or the test system's config (e.g. `process.env.USER_PASSWORD`), never hardcode `***`
 - Check `SESSION.md` for viewport size — add `test.use({ viewport: {...} })` if non-default

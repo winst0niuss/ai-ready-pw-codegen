@@ -37,6 +37,7 @@ export interface TargetAncestor {
 
 export interface TargetSnapshot {
   missing?: boolean;
+  secret?: boolean; // password field — entered values are masked in the recording
   tagName?: string;
   role?: string;
   accessibleName?: string;

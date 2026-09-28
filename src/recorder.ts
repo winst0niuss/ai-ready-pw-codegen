@@ -5,6 +5,7 @@ import { getDomCleanerScript } from './snapshot/dom-cleaner';
 import { captureAccessibilityTree } from './snapshot/accessibility';
 import { captureTargetElement } from './snapshot/target-element';
 import { normalizeCodegenData } from './utils/codegen-data';
+import { SECRET_BINDING, SECRET_MARKER_SCRIPT, SECRET_MASK, SecretRedactor, isSecretField, maskSecretInCode } from './utils/secrets';
 import { writeScreenshot } from './utils/fs-helpers';
 import { JsonlWriter } from './utils/jsonl-writer';
 import { withTimeout } from './utils/with-timeout';
@@ -81,6 +82,8 @@ export class Recorder {
   private needsProtocolFallback: boolean;
   // Whether the current progress line has not been terminated with \n yet
   private progressLineActive = false;
+  // Значения, введённые в поля паролей, — вычищаются из всего, что пишется на диск
+  private redactor = new SecretRedactor();
 
   constructor(context: BrowserContext, page: Page, startUrl: string, options: RecorderOptions, needsProtocolFallback = false) {
     this.context = context;
@@ -181,6 +184,12 @@ export class Recorder {
         this.pendingNetworkPromises.push(promise);
       });
     }
+
+    // Страница сообщает значения полей паролей в момент ввода — см. SECRET_MARKER_SCRIPT
+    await this.context.exposeBinding(SECRET_BINDING, (_source, fieldId: string, value: string) => {
+      this.redactor.remember(`field:${fieldId}`, value);
+    });
+    await this.context.addInitScript(SECRET_MARKER_SCRIPT);
 
     // Launch codegen GUI inspector
     if (this.options.inspectorWindow !== false) {
@@ -362,6 +371,16 @@ export class Recorder {
       }
     }
 
+    // Поле пароля: значение маскируется в самом действии, а redactor чистит его
+    // из снимков, логов и сети
+    const isSecret =
+      data.action.name === 'fill' &&
+      (isSecretField(targetResult?.target) || this.redactor.has(`action:${index}`));
+    if (isSecret && data.action.text) {
+      // Запасной путь, если binding не сработал (например, страница без init-скрипта)
+      this.redactor.remember(`action:${index}`, data.action.text);
+    }
+
     // Capture snapshots
     let accessibilityTree: unknown = null;
     let cleanedDom = '';
@@ -411,11 +430,13 @@ export class Recorder {
     }
 
     // Flush console logs accumulated since previous action
-    const consoleLogs = this.pendingConsoleLogs.length > 0 ? [...this.pendingConsoleLogs] : undefined;
+    const consoleLogs = this.pendingConsoleLogs.length > 0 ? this.redactor.redact(this.pendingConsoleLogs) : undefined;
     this.pendingConsoleLogs = [];
 
     // Drain network requests accumulated since previous action
-    const networkRequests = await this.drainNetworkRequests();
+    const networkRequests = this.redactor.redact(await this.drainNetworkRequests());
+
+    const secretText = isSecret ? data.action.text : undefined;
 
     const action: RecordedAction = {
       index,
@@ -424,17 +445,18 @@ export class Recorder {
       action: {
         type: actionName,
         ...(selector && { selector }),
-        ...(data.action.text !== undefined && { value: data.action.text }),
+        // redactString — на случай, если target не захвачен, а binding секрет уже сообщил
+        ...(data.action.text !== undefined && { value: secretText ? SECRET_MASK : this.redactor.redactString(data.action.text) }),
         ...(data.action.key !== undefined && { key: data.action.key }),
-        codegenCode: code,
+        codegenCode: this.redactor.redactString(secretText ? maskSecretInCode(code, secretText) : code),
         ...(data.action.position && { position: data.action.position }),
         ...(data.action.modifiers !== undefined && { modifiers: data.action.modifiers }),
         ...(data.action.button !== undefined && { button: data.action.button }),
         ...(data.action.clickCount !== undefined && { clickCount: data.action.clickCount }),
       },
-      ...(targetResult && { target: targetResult.target, selectors: targetResult.selectors }),
+      ...(targetResult && { target: this.redactor.redact(targetResult.target), selectors: targetResult.selectors }),
       ...(frameContext && { frame: frameContext }),
-      accessibilityTree,
+      accessibilityTree: this.redactor.redact(accessibilityTree),
       screenshotFile,
       ...(consoleLogs && { consoleLogs }),
       ...(networkRequests.length > 0 && { networkRequests }),
@@ -442,7 +464,7 @@ export class Recorder {
 
     const snapshot = {
       index,
-      cleanedDom,
+      cleanedDom: this.redactor.redactString(cleanedDom),
     };
 
     // Written straight to disk; the writer keeps only this line buffered so that
@@ -453,7 +475,8 @@ export class Recorder {
     // Human-readable progress line
     // Never write \n immediately — commit the previous line only when a new action starts.
     // This allows overwriting the line on actionUpdated, including the first character of a fill.
-    const line = formatActionLine(index, data, targetResult?.target ?? null, hasFailed, this.options.maxActions);
+    const displayData = secretText ? { ...data, action: { ...data.action, text: SECRET_MASK } } : data;
+    const line = formatActionLine(index, displayData, targetResult?.target ?? null, hasFailed, this.options.maxActions);
     if (isUpdate) {
       process.stdout.write(`\x1b[2K\r${line}`);
     } else {

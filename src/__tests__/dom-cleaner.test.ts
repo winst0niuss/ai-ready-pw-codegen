@@ -48,6 +48,14 @@ describe('getDomCleanerScript', () => {
     expect(result).not.toContain('<circle');
   });
 
+  it('masks the value of password inputs', () => {
+    document.body.innerHTML = '<input type="password" value="s3cret"><input type="text" value="login">';
+    const result = runCleaner();
+    expect(result).not.toContain('s3cret');
+    expect(result).toContain('value="***"');
+    expect(result).toContain('value="login"');
+  });
+
   it('truncates deep nesting at depth 30', () => {
     document.body.innerHTML = '<div>'.repeat(35) + 'deep' + '</div>'.repeat(35);
     expect(runCleaner()).toContain('truncated');

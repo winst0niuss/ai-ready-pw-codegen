@@ -41,6 +41,7 @@ Release: `bin` → `dist/main.js`, `prepublishOnly` builds. User-visible changes
 - Iframe actions: `resolveFrame` walks `framePath` to the real `Frame`; target/DOM capture run there, the a11y tree always from `page`. Any failure falls back to `page`.
 - Each capture is wrapped in `withTimeout(..., CAPTURE_TIMEOUT_MS)`. Capture failures never block recording — the action is written with an error placeholder and marked yellow in the console.
 - Console logs and network responses accumulate between actions and are attached to the **next** processed action.
+- **Password masking** (`utils/secrets.ts`): the queue can lag seconds behind the user, so secrets are not taken from it. An init script reports password-field values at input time via `exposeBinding` to `SecretRedactor`, which scrubs every string written to disk (action, target, a11y, DOM, console, network). `network.har` is not scrubbed.
 
 ### Output durability
 
