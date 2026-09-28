@@ -130,7 +130,7 @@ Unless `--no-archive` is passed, this directory is zipped to `recordings/test-â€
     "css": "button#submit-btn"
   },
   "frame": { "path": ["iframe#checkout"], "url": "https://pay.example.com/form" },
-  "accessibilityTree": { "role": "WebArea", "children": [] },
+  "accessibilityTree": { "ariaSnapshot": "- main:\n  - button \"Submit\"" },
   "screenshotFile": "screenshots/002-click.jpg",
   "consoleLogs": [
     { "level": "error", "text": "Failed to fetch /api/data", "timestamp": "..." }

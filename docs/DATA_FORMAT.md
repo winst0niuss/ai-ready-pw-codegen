@@ -28,9 +28,14 @@ Each line is a JSON object — one user action with full page context:
 | `index` | Sequential action number |
 | `timestamp` | ISO 8601 timestamp |
 | `url` | Page URL at action time |
-| `action.type` | `navigate`, `click`, `fill`, `press`, `select`, `check`, `uncheck`, `hover`, `assertVisible` |
+| `action.type` | Actions: `navigate`, `click`, `fill`, `press`, `select`, `check`, `uncheck`, `hover`, `setInputFiles`, `openPage`, `closePage`. Assertions added via the recorder toolbar: `assertVisible`, `assertText`, `assertValue`, `assertChecked`, `assertSnapshot` |
 | `action.selector` | Playwright selector (codegen format) |
-| `action.value` | Entered text (`fill`, `select`) |
+| `action.value` | Entered text (`fill`), expected text (`assertText`) or expected value (`assertValue`) |
+| `action.options` | Selected option values (`select`) |
+| `action.files` | File names (`setInputFiles`) |
+| `action.checked` | Expected state (`assertChecked`) |
+| `action.substring` | `assertText`: `true` → `toContainText`, `false` → `toHaveText` |
+| `action.ariaSnapshot` | Expected ARIA snapshot (`assertSnapshot`) |
 | `action.key` | Key name (`press`: Enter, Tab, Escape, etc.) |
 | `action.codegenCode` | Generated Playwright test code snippet |
 | `action.position` | Click coordinates `{ x, y }` |
@@ -40,7 +45,7 @@ Each line is a JSON object — one user action with full page context:
 | `target` | Snapshot of the clicked element — see below (absent for `navigate`) |
 | `selectors` | Ready-made selector candidates — see below (absent for `navigate`) |
 | `frame` | iframe context — **present only for actions inside an iframe** |
-| `accessibilityTree` | Full page accessibility tree at action time |
+| `accessibilityTree` | `{ "ariaSnapshot": "<YAML>" }` — full page ARIA snapshot at action time (roles, accessible names, field values), the same format as `toMatchAriaSnapshot`. `{ "error": ... }` if the capture failed |
 | `screenshotFile` | Relative path to screenshot (or `null`) |
 | `consoleLogs` | Browser console messages since previous action (optional) |
 | `networkRequests` | XHR/fetch requests since previous action: `url`, `method`, `status`, `duration`, `requestBody`, `responseBody` (optional) |
@@ -104,7 +109,7 @@ Read only when:
 
 - `selectors` → ready locator candidates, no derivation needed
 - `target` → element identity, state, and ancestor chain for scoping
-- `accessibilityTree` → semantic role and accessible name of surrounding elements
+- `accessibilityTree.ariaSnapshot` → semantic role and accessible name of surrounding elements
 - `snapshots.jsonl` (by `index`) → DOM hierarchy and test attributes
 - `screenshots/` → visual context
 - `action.codegenCode` → working Playwright code as starting point

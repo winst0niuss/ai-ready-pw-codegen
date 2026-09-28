@@ -61,11 +61,19 @@ Actions without a `frame` field belong to the top-level page.
 | `click` | `await page.getByRole('button', { name: '...' }).click()` |
 | `fill` | `await page.getByRole('textbox', { name: '...' }).fill('value')` |
 | `press` | `await page.keyboard.press('Enter')` |
-| `select` | `await page.getByRole('combobox', { name: '...' }).selectOption('value')` |
+| `select` | `await page.getByRole('combobox', { name: '...' }).selectOption('value')` — values from `action.options` |
 | `check` | `await page.getByRole('checkbox', { name: '...' }).check()` |
 | `uncheck` | `await page.getByRole('checkbox', { name: '...' }).uncheck()` |
 | `hover` | `await page.getByRole('link', { name: '...' }).hover()` |
+| `setInputFiles` | `await page.getByLabel('...').setInputFiles('file.pdf')` — `action.files` are file names only; ask where the fixtures live |
+| `openPage` / `closePage` | New tab / tab closed — use `context.waitForEvent('page')` around the action that opened it |
 | `assertVisible` | `await expect(page.locator('...')).toBeVisible()` |
+| `assertText` | `toContainText(value)` if `action.substring`, else `toHaveText(value)` |
+| `assertValue` | `toHaveValue(value)`, or `toBeEmpty()` if `value` is empty |
+| `assertChecked` | `toBeChecked()` / `not.toBeChecked()` by `action.checked` |
+| `assertSnapshot` | `toMatchAriaSnapshot(action.ariaSnapshot)` |
+
+Assertions (`assert*`) were added deliberately by the person recording — keep all of them in the test.
 
 ## Code Template
 
@@ -101,4 +109,4 @@ test.describe('User flow: [describe based on actions]', () => {
 - Use `networkRequests` to make waits explicit instead of arbitrary timeouts: `await page.waitForResponse(r => r.url().includes('/api/data'))`. Response bodies also show what the app expects — useful for `page.route()` mocks
 - `target.state` tells you what to assert after an action (`checked`, `enabled`, `focused`); a `target.missing: true` means the element was not resolved at capture time — rely on the accessibility tree or DOM snapshot for that step
 - Actions with `target.secret: true` are password inputs with the value masked as `***` — read the password from an environment variable or the test system's config (e.g. `process.env.USER_PASSWORD`), never hardcode `***`
-- Check `SESSION.md` for viewport size — add `test.use({ viewport: {...} })` if non-default
+- Check `SESSION.md` for viewport size — add `test.use({ viewport: {...} })` only if it differs from Playwright's default 1280x720 and from the viewport in the project's `playwright.config`

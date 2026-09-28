@@ -86,6 +86,11 @@ export interface RecordedAction {
     selector?: string;
     value?: string;
     key?: string;
+    options?: string[];
+    files?: string[];
+    checked?: boolean;
+    substring?: boolean;
+    ariaSnapshot?: string;
     codegenCode?: string;
     position?: { x: number; y: number };
     modifiers?: number;
@@ -139,7 +144,10 @@ export interface CodegenActionData {
     key?: string;
     value?: string;
     options?: string[];
+    files?: string[];
     checked?: boolean;
+    substring?: boolean;
+    ariaSnapshot?: string;
     modifiers?: number;
     button?: string;
     clickCount?: number;

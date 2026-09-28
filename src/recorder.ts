@@ -30,7 +30,8 @@ function formatActionLine(
     case 'select': {
       const name = target?.accessibleName || actionData.action.selector || '';
       const role = target?.role ? `${target.role} ` : '';
-      const val = actionData.action.text !== undefined ? ` = "${actionData.action.text}"` : '';
+      const value = actionData.action.text ?? actionData.action.options?.join(', ');
+      const val = value !== undefined ? ` = "${value}"` : '';
       description = `${role}"${name}"${val}`;
       break;
     }
@@ -437,6 +438,8 @@ export class Recorder {
     const networkRequests = this.redactor.redact(await this.drainNetworkRequests());
 
     const secretText = isSecret ? data.action.text : undefined;
+    // fill/assertText присылают text, assertValue — value
+    const value = data.action.text ?? data.action.value;
 
     const action: RecordedAction = {
       index,
@@ -446,8 +449,17 @@ export class Recorder {
         type: actionName,
         ...(selector && { selector }),
         // redactString — на случай, если target не захвачен, а binding секрет уже сообщил
-        ...(data.action.text !== undefined && { value: secretText ? SECRET_MASK : this.redactor.redactString(data.action.text) }),
+        ...(value !== undefined && { value: secretText ? SECRET_MASK : this.redactor.redactString(value) }),
         ...(data.action.key !== undefined && { key: data.action.key }),
+        ...(data.action.options && { options: data.action.options }),
+        ...(data.action.files && { files: data.action.files }),
+        ...(data.action.checked !== undefined && { checked: data.action.checked }),
+        ...(data.action.substring !== undefined && { substring: data.action.substring }),
+        // Codegen прикладывает ariaSnapshot и к обычным действиям — это дубль accessibilityTree,
+        // в запись берём только ожидаемый снимок проверки
+        ...(actionName === 'assertSnapshot' && data.action.ariaSnapshot !== undefined && {
+          ariaSnapshot: this.redactor.redactString(data.action.ariaSnapshot),
+        }),
         codegenCode: this.redactor.redactString(secretText ? maskSecretInCode(code, secretText) : code),
         ...(data.action.position && { position: data.action.position }),
         ...(data.action.modifiers !== undefined && { modifiers: data.action.modifiers }),
