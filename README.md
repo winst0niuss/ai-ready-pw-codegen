@@ -31,6 +31,7 @@ A Chromium browser opens with Playwright's recorder UI. Interact with the page. 
 
 ```
 🎭 AI-Ready PW Codegen
+🧩 Playwright 1.59.1 (/path/to/your-project/node_modules/playwright)
 🌐 URL: https://your-app.com
 📂 Output: ./recordings/test-2026-03-23T15-08-06
 
@@ -38,7 +39,7 @@ A Chromium browser opens with Playwright's recorder UI. Interact with the page. 
 [001] navigate   → https://your-app.com
 [002] click      → button "Sign in"
 [003] fill       → textbox "Email" = "user@example.com"
-[004] fill       → textbox "Password" = "••••••••"
+[004] fill       → textbox "Password" = "***"
 [005] click      → button "Submit"
 
 🎬 Recorded 5 actions
@@ -182,6 +183,15 @@ See [docs/DATA_FORMAT.md](docs/DATA_FORMAT.md) and [docs/TEST_GUIDE.md](docs/TES
 Uses Playwright internal API (underscore-prefixed). Works with Playwright `^1.59.1` (verified on 1.59.1 and 1.63.0). If the recorder is started inside a project that has its own `playwright`, that version is used — together with the browsers already installed for it, so nothing is downloaded or changed. Otherwise the bundled Playwright is used. If Chromium is missing, run `npx playwright@<version> install chromium` with the version printed in the error.
 
 With Playwright ≥1.63 only one recorder UI can be attached to a browser context, so the separate Inspector window is not opened — use the in-page recorder toolbar; every action is still printed to the console.
+
+## Troubleshooting
+
+| Problem | Fix |
+|---------|-----|
+| `Chromium for Playwright X.Y.Z is not installed` | Run the printed `npx playwright@X.Y.Z install chromium` — each Playwright version needs its own browser build, so a plain `npx playwright install` in another project may install a different one |
+| `Playwright internal API _enableRecorder is not available` | The project's Playwright is older than 1.59.1 — update it, or run the recorder outside that project to use the bundled version |
+| Browser window doesn't fit the screen (e.g. over RDP) | Pass a smaller viewport: `--viewport-size=1024,640` |
+| No Inspector window | Expected with Playwright ≥1.63 — use the in-page recorder toolbar |
 
 ## Development
 
